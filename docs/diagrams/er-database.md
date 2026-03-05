@@ -9,18 +9,18 @@ Este diagrama muestra el modelo de datos relacional para la persistencia en MySQ
 
 ```mermaid
 erDiagram
-    USERS ||--o{ TICKETS : purchases
-    USERS ||--o{ QUEUE_HISTORY : enters
+    BUYERS ||--o{ TICKETS : purchases
     EVENTS ||--o{ TICKETS : has
     EVENTS ||--o{ QUEUE_HISTORY : for
-    TICKETS ||--o{ AUDIT_LOG : generates
-    
-    USERS {
+    TICKETS ||--|| PAYMENTS : has
+
+    BUYERS {
         varchar(36) id PK "UUID"
-        varchar(255) session_token UK "Token de sesión"
-        varchar(100) email "Opcional para notificaciones"
-        timestamp created_at "Fecha de creación"
-        timestamp last_seen_at "Última actividad"
+        varchar(100) first_name "Nombre del comprador"
+        varchar(100) last_name "Apellido del comprador"
+        varchar(20) dni "Documento Nacional de Identidad"
+        varchar(100) email "Email del comprador"
+        timestamp created_at "Fecha de registro"
     }
     
     EVENTS {
@@ -40,20 +40,29 @@ erDiagram
     }
     
     TICKETS {
-        varchar(36) id PK "UUID - Código único del ticket"
-        varchar(36) user_id FK "Usuario comprador"
+        varchar(36) id PK "UUID"
+        varchar(36) buyer_id FK "Comprador"
         varchar(36) event_id FK "Evento asociado"
-        varchar(50) ticket_code UK "Código legible: TKT-XXXX-XXXX"
+        varchar(50) ticket_code UK "Código legible: VQ-XXXXXXXXXXXX"
         decimal(10-2) price_paid "Precio pagado"
         enum status "pending, confirmed, used, cancelled"
-        varchar(100) payment_reference "Ref. pasarela (simulado)"
         timestamp purchased_at "Fecha de compra"
         timestamp confirmed_at "Fecha de confirmación"
+    }
+
+    PAYMENTS {
+        varchar(36) id PK "UUID"
+        varchar(36) ticket_id FK "Ticket asociado"
+        decimal(10-2) amount "Monto pagado"
+        enum payment_method "credit_card, debit_card, mercado_pago"
+        enum status "completed, failed, refunded"
+        varchar(100) payment_reference UK "Referencia de transacción"
+        timestamp created_at "Fecha del pago"
     }
     
     QUEUE_HISTORY {
         bigint id PK "Auto-increment"
-        varchar(36) user_id FK "Usuario"
+        varchar(36) user_id "UUID anónimo del usuario en la cola"
         varchar(36) event_id FK "Evento"
         int initial_position "Posición al entrar"
         timestamp entered_at "Entrada a la cola"
@@ -63,26 +72,14 @@ erDiagram
         int wait_time_seconds "Tiempo en cola"
     }
     
-    AUDIT_LOG {
-        bigint id PK "Auto-increment"
-        varchar(50) action "TICKET_PURCHASED, TICKET_CANCELLED, etc."
-        varchar(36) user_id "Usuario involucrado"
-        varchar(36) entity_id "ID de la entidad afectada"
-        varchar(50) entity_type "ticket, event, etc."
-        json old_value "Valor anterior (si aplica)"
-        json new_value "Valor nuevo"
-        varchar(45) ip_address "IP del cliente"
-        text user_agent "User-Agent del navegador"
-        timestamp created_at "Timestamp del evento"
-    }
 ```
 
 ## Índices Recomendados
 
 ```sql
--- USERS
-CREATE INDEX idx_users_session_token ON users(session_token);
-CREATE INDEX idx_users_last_seen ON users(last_seen_at);
+-- BUYERS
+CREATE INDEX idx_buyers_dni ON buyers(dni);
+CREATE INDEX idx_buyers_email ON buyers(email);
 
 -- EVENTS
 CREATE INDEX idx_events_status ON events(status);
@@ -90,21 +87,19 @@ CREATE INDEX idx_events_sale_dates ON events(sale_start, sale_end);
 CREATE INDEX idx_events_event_date ON events(event_date);
 
 -- TICKETS
-CREATE INDEX idx_tickets_user ON tickets(user_id);
+CREATE INDEX idx_tickets_buyer ON tickets(buyer_id);
 CREATE INDEX idx_tickets_event ON tickets(event_id);
 CREATE INDEX idx_tickets_status ON tickets(status);
 CREATE INDEX idx_tickets_code ON tickets(ticket_code);
+
+-- PAYMENTS
+CREATE INDEX idx_payments_ticket ON payments(ticket_id);
+CREATE INDEX idx_payments_reference ON payments(payment_reference);
 
 -- QUEUE_HISTORY
 CREATE INDEX idx_queue_user_event ON queue_history(user_id, event_id);
 CREATE INDEX idx_queue_entered ON queue_history(entered_at);
 CREATE INDEX idx_queue_exit_reason ON queue_history(exit_reason);
-
--- AUDIT_LOG
-CREATE INDEX idx_audit_action ON audit_log(action);
-CREATE INDEX idx_audit_user ON audit_log(user_id);
-CREATE INDEX idx_audit_entity ON audit_log(entity_type, entity_id);
-CREATE INDEX idx_audit_created ON audit_log(created_at);
 ```
 
 ## Notas de Diseño
@@ -125,13 +120,13 @@ FOR UPDATE;
 -- Verifica capacidad
 -- Si remaining_capacity > 0:
 
-INSERT INTO tickets (id, user_id, event_id, ...) VALUES (...);
+INSERT INTO buyers (id, first_name, last_name, dni, email) VALUES (...);
+INSERT INTO tickets (id, buyer_id, event_id, ...) VALUES (...);
+INSERT INTO payments (id, ticket_id, amount, payment_method, ...) VALUES (...);
 
 UPDATE events 
 SET remaining_capacity = remaining_capacity - 1 
 WHERE id = ?;
-
-INSERT INTO audit_log (...) VALUES (...);
 
 COMMIT;
 ```
@@ -146,8 +141,4 @@ PARTITION BY RANGE (UNIX_TIMESTAMP(entered_at)) (
     PARTITION p_2024_02 VALUES LESS THAN (UNIX_TIMESTAMP('2024-03-01')),
     -- ...
 );
-
--- Particionar audit_log por mes
-ALTER TABLE audit_log
-PARTITION BY RANGE (UNIX_TIMESTAMP(created_at)) (...);
 ```

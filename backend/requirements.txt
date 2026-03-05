@@ -1,0 +1,22 @@
+# ============================================
+# Virtual Queue — Backend Dependencies
+# ============================================
+# Instalar: pip install -r requirements.txt
+# ============================================
+
+# --- Framework Web ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# --- Base de Datos (MySQL async) ---
+sqlalchemy[asyncio]==2.0.36
+asyncmy==0.2.9
+
+# --- Redis (async con parser rápido) ---
+redis[hiredis]==5.2.1
+
+# --- Configuración (variables de entorno) ---
+pydantic-settings==2.7.1
+
+# --- Utilidades ---
+python-multipart==0.0.20

@@ -1,0 +1,285 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "title": "🏃 Virtual Users (VUs Activos)",
+      "description": "Cantidad de usuarios virtuales activos en tiempo real",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "spanNulls": true
+          },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "alias": "VUs Activos",
+          "query": "SELECT mean(\"value\") FROM \"vus\" WHERE $timeFilter GROUP BY time($__interval)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "datasource": "InfluxDB-k6"
+    },
+    {
+      "title": "📊 Requests por Segundo",
+      "description": "Tasa de requests HTTP por segundo",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "spanNulls": true
+          },
+          "unit": "reqps"
+        }
+      },
+      "targets": [
+        {
+          "alias": "Requests/s",
+          "query": "SELECT count(\"value\") FROM \"http_reqs\" WHERE $timeFilter GROUP BY time($__interval)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "datasource": "InfluxDB-k6"
+    },
+    {
+      "title": "⏱️ Tiempo de Respuesta (Percentiles)",
+      "description": "Latencia HTTP: p50, p90, p95, p99",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "spanNulls": true
+          },
+          "unit": "ms"
+        }
+      },
+      "targets": [
+        {
+          "alias": "p50",
+          "query": "SELECT median(\"value\") FROM \"http_req_duration\" WHERE $timeFilter GROUP BY time($__interval)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        },
+        {
+          "alias": "p90",
+          "query": "SELECT percentile(\"value\", 90) FROM \"http_req_duration\" WHERE $timeFilter GROUP BY time($__interval)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        },
+        {
+          "alias": "p95",
+          "query": "SELECT percentile(\"value\", 95) FROM \"http_req_duration\" WHERE $timeFilter GROUP BY time($__interval)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        },
+        {
+          "alias": "p99",
+          "query": "SELECT percentile(\"value\", 99) FROM \"http_req_duration\" WHERE $timeFilter GROUP BY time($__interval)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "datasource": "InfluxDB-k6"
+    },
+    {
+      "title": "❌ Tasa de Errores (%)",
+      "description": "Porcentaje de requests HTTP fallidos",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "red", "mode": "fixed" },
+          "custom": {
+            "fillOpacity": 30,
+            "lineWidth": 2,
+            "spanNulls": true
+          },
+          "unit": "percent",
+          "max": 100,
+          "min": 0
+        }
+      },
+      "targets": [
+        {
+          "alias": "Error Rate %",
+          "query": "SELECT mean(\"value\") * 100 FROM \"http_req_failed\" WHERE $timeFilter GROUP BY time($__interval)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "datasource": "InfluxDB-k6"
+    },
+    {
+      "title": "🌐 Conexiones WebSocket",
+      "description": "Sesiones WebSocket activas",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "green", "mode": "fixed" },
+          "custom": {
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "spanNulls": true
+          },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "alias": "WS Sessions",
+          "query": "SELECT count(\"value\") FROM \"ws_sessions\" WHERE $timeFilter GROUP BY time($__interval)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "datasource": "InfluxDB-k6"
+    },
+    {
+      "title": "📡 Data Transferido",
+      "description": "Volumen de datos enviados y recibidos",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "spanNulls": true
+          },
+          "unit": "bytes"
+        }
+      },
+      "targets": [
+        {
+          "alias": "Data Enviado",
+          "query": "SELECT sum(\"value\") FROM \"data_sent\" WHERE $timeFilter GROUP BY time($__interval)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        },
+        {
+          "alias": "Data Recibido",
+          "query": "SELECT sum(\"value\") FROM \"data_received\" WHERE $timeFilter GROUP BY time($__interval)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "datasource": "InfluxDB-k6"
+    },
+    {
+      "title": "📋 Checks Exitosos (%)",
+      "description": "Porcentaje de validaciones (checks) que pasaron correctamente",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 90 },
+              { "color": "green", "value": 99 }
+            ]
+          },
+          "unit": "percent",
+          "max": 100,
+          "min": 0
+        }
+      },
+      "targets": [
+        {
+          "alias": "Checks OK %",
+          "query": "SELECT (sum(\"value\") / count(\"value\")) * 100 FROM \"checks\" WHERE $timeFilter",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "datasource": "InfluxDB-k6"
+    },
+    {
+      "title": "⏱️ Latencia Promedio",
+      "description": "Tiempo de respuesta promedio actual",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 500 },
+              { "color": "red", "value": 2000 }
+            ]
+          },
+          "unit": "ms"
+        }
+      },
+      "targets": [
+        {
+          "alias": "Avg Response Time",
+          "query": "SELECT mean(\"value\") FROM \"http_req_duration\" WHERE $timeFilter GROUP BY time($__interval) ORDER BY time DESC LIMIT 1",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "datasource": "InfluxDB-k6"
+    },
+    {
+      "title": "🔢 Total Requests",
+      "description": "Cantidad total de requests realizados",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "blue", "mode": "fixed" },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "alias": "Total Requests",
+          "query": "SELECT count(\"value\") FROM \"http_reqs\" WHERE $timeFilter",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "datasource": "InfluxDB-k6"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["k6", "load-testing", "virtual-queue"],
+  "templating": { "list": [] },
+  "time": { "from": "now-5m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Virtual Queue — k6 Load Testing",
+  "uid": "virtual-queue-k6",
+  "version": 1
+}

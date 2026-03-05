@@ -30,7 +30,7 @@ Este proyecto implementa una **arquitectura Event-Driven con Capas**, documentad
 | **FastAPI + Uvicorn** | API REST pura + WebSocket server                      |
 | **Python + asyncio**  | Worker background que procesa la cola                 |
 | **Redis 7+**          | Cola de espera, permisos (TTL), Pub/Sub               |
-| **MySQL 8+**          | Persistencia: eventos, tickets, usuarios, auditoría   |
+| **MySQL 8+**          | Persistencia: eventos, tickets, compradores, pagos    |
 | **Docker**            | Contenedorización de todos los servicios              |
 
 ### Separación Frontend / Backend
@@ -57,6 +57,8 @@ Usuario ──► Next.js (React SSR/CSR) ──► FastAPI (API REST + WebSocke
 5. [Diagrama de Estados del Usuario](diagrams/state-user.md)
 6. [Diagrama Entidad-Relación (MySQL)](diagrams/er-database.md)
 7. [Diagrama de Infraestructura (Docker)](diagrams/infrastructure.md)
+8. [Diagrama de Infraestructura de Testing (k6 + Grafana)](diagrams/infrastructure-testing.md)
+9. [Plan de Pruebas de Carga](TESTING.md)
 
 ---
 
@@ -87,7 +89,7 @@ Se optó por **Next.js standalone** (contenedor Docker propio) en lugar de stati
 │  • Eventos creados                                          │
 │  • Tickets vendidos (histórico)                             │
 │  • Usuarios registrados                                     │
-│  • Auditoría de transacciones                               │
+│  • Compradores y pagos                                      │
 └─────────────────────────────────────────────────────────────┘
 ```
 

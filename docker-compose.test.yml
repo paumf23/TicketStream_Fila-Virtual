@@ -1,0 +1,88 @@
+version: '3.8'
+
+# ============================================
+# STACK DE TESTING (Load Testing)
+# Ejecutar junto al stack principal:
+#   docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
+# ============================================
+
+services:
+  # ============================================
+  # INFLUXDB (Almacenamiento de métricas de k6)
+  # ============================================
+  influxdb:
+    image: influxdb:1.8-alpine
+    container_name: virtual-queue-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_DB=k6
+      - INFLUXDB_HTTP_MAX_BODY_SIZE=0
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+    networks:
+      - virtual-queue-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "influx", "-execute", "SHOW DATABASES"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # GRAFANA (Dashboard de métricas en tiempo real)
+  # ============================================
+  grafana:
+    image: grafana/grafana:10-alpine
+    container_name: virtual-queue-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/k6-dashboard.json
+    volumes:
+      - ./tests/load/grafana/provisioning/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./tests/load/grafana/provisioning/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./tests/load/grafana/dashboards/k6-dashboard.json:/var/lib/grafana/dashboards/k6-dashboard.json
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    networks:
+      - virtual-queue-network
+    restart: unless-stopped
+
+  # ============================================
+  # K6 (Runner de tests de carga)
+  # ============================================
+  k6:
+    image: grafana/k6:latest
+    container_name: virtual-queue-k6
+    environment:
+      - K6_OUT=influxdb=http://influxdb:8086/k6
+      - API_BASE_URL=http://api:8000
+      - WS_BASE_URL=ws://api:8000
+    volumes:
+      - ./tests/load/scripts:/scripts
+    networks:
+      - virtual-queue-network
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    profiles:
+      - test
+
+# ============================================
+# REDES (usa la misma red del stack principal)
+# ============================================
+networks:
+  virtual-queue-network:
+    driver: bridge
+
+# ============================================
+# VOLÚMENES
+# ============================================
+volumes:
+  influxdb-data:
+    driver: local

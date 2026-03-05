@@ -59,9 +59,10 @@ sequenceDiagram
     API->>DB: BEGIN TRANSACTION
     API->>DB: SELECT remaining_capacity FROM events WHERE id=? FOR UPDATE
     DB-->>API: remaining: 50
-    API->>DB: INSERT INTO tickets (user_id, event_id, ...)
-    API->>DB: UPDATE events SET remaining = remaining - 1
-    API->>DB: INSERT INTO audit_log (action, user_id, ...)
+    API->>DB: INSERT INTO buyers (first_name, last_name, dni, email, ...)
+    API->>DB: INSERT INTO tickets (buyer_id, event_id, ...)
+    API->>DB: INSERT INTO payments (ticket_id, amount, payment_method, ...)
+
     API->>DB: COMMIT
     API->>R: HDEL allowed_users {user_id}
     API-->>F: {success: true, ticket_id: "TKT-123"}
@@ -84,7 +85,7 @@ Cuando el Worker saca al usuario actual de la cola y lo mueve a `allowed_users`,
 
 **FASE 4 — Compra (pasos 22-30)**
 
-El usuario hace clic en "Comprar". El Frontend envía `POST /api/tickets/purchase` a FastAPI. FastAPI primero verifica en Redis que el usuario tenga permiso: ejecuta `HGET allowed_users {user_id}`. Si Redis confirma que el usuario está en `allowed_users` (es decir, es su turno y no expiró), FastAPI inicia una transacción en MySQL. Dentro de la transacción: hace un `SELECT ... FOR UPDATE` para bloquear la fila del evento y leer la capacidad restante, ejecuta el `INSERT` del ticket, decrementa la capacidad con `UPDATE`, y registra la operación en `audit_log`. Si todo sale bien, hace `COMMIT`.
+El usuario hace clic en "Comprar". El Frontend envía `POST /api/tickets/purchase` a FastAPI. FastAPI primero verifica en Redis que el usuario tenga permiso: ejecuta `HGET allowed_users {user_id}`. Si Redis confirma que el usuario está en `allowed_users` (es decir, es su turno y no expiró), FastAPI inicia una transacción en MySQL. Dentro de la transacción: hace un `SELECT ... FOR UPDATE` para bloquear la fila del evento y leer la capacidad restante, ejecuta el `INSERT` del ticket y decrementa la capacidad con `UPDATE`. Si todo sale bien, hace `COMMIT`.
 
 Después del commit exitoso, FastAPI ejecuta `HDEL allowed_users {user_id}` en Redis. Es importante aclarar que **`HDEL` no elimina al usuario de la cola** (`waiting_queue`) — el usuario ya fue sacado de ahí por el Worker con `LPOP` en la Fase 2. Lo que `HDEL` hace es eliminarlo de `allowed_users`, que es la estructura de **usuarios con permiso para comprar**. Es una limpieza: el usuario ya compró, no necesita seguir en la lista de permitidos. Si no se hiciera, el TTL de 5 minutos eventualmente lo limpiaría, pero es buena práctica borrarlo inmediatamente.
 
@@ -152,6 +153,10 @@ sequenceDiagram
     F-->>U: Mostrar pantalla SOLD_OUT
 ```
 
+**Explicación del flujo:**
+
+El usuario tiene permiso para comprar (está en `allowed_users`) y hace clic en "Comprar". FastAPI primero verifica en Redis con `HGET` que el usuario efectivamente tiene permiso — Redis confirma que sí. Luego FastAPI inicia la transacción en MySQL y ejecuta `SELECT remaining_capacity FOR UPDATE`, que bloquea la fila del evento para evitar race conditions. MySQL responde que la capacidad restante es 0 — no quedan entradas. FastAPI ejecuta `ROLLBACK` para deshacer la transacción (en este caso no se modificó nada, pero es buena práctica cerrarla explícitamente). A continuación, FastAPI hace `HDEL allowed_users {user_id}` para eliminar al usuario de la lista de permitidos, ya que su intento de compra falló y no tiene sentido que conserve el permiso. Finalmente, FastAPI responde con error `SOLD_OUT` y el Frontend muestra la pantalla de entradas agotadas. No interviene el Worker ni el WebSocket porque es una interacción directa usuario → API → base de datos, y el resultado es definitivo: no hay entradas disponibles.
+
 ### Escenario: Usuario Abandona la Cola
 
 ```mermaid
@@ -164,8 +169,13 @@ sequenceDiagram
     U->>F: Clic en "Salir de la cola"
     F->>API: DELETE /api/queue/leave/{queue_id}
     API->>R: LREM waiting_queue {user_id}
+    R-->>API: 1 (eliminado)
     API-->>F: {success: true}
     F->>F: Desconectar WebSocket
     F-->>U: Redirigir a landing
 ```
+
+**Explicación del flujo:**
+
+El usuario decide abandonar la cola voluntariamente y hace clic en "Salir de la cola". El Frontend envía un `DELETE /api/queue/leave/{queue_id}` a FastAPI. FastAPI ejecuta `LREM waiting_queue {user_id}` en Redis, que busca y remueve al usuario de la cola desde cualquier posición. Redis responde con `1` confirmando que encontró y eliminó al usuario. FastAPI responde al Frontend con éxito. A continuación, el Frontend cierra la conexión WebSocket internamente (`websocket.close()`) — la flecha `F → F` representa esta acción propia del Frontend, no una comunicación entre participantes. Cuando la conexión se cierra, el WebSocket Server detecta el cierre del lado servidor, pero no necesita hacer nada (no marca al usuario en `disconnected_users` ni inicia un timer) porque el usuario ya fue removido de la cola con `LREM`. Finalmente, el Frontend redirige al usuario a la página de landing.
 </div>

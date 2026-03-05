@@ -61,6 +61,34 @@ flowchart TB
     mysql_server --- mysql_data
 ```
 
+### Mapa de Comunicación entre Contenedores
+
+```
+Internet
+  │
+  ├── HTTP :3000 ──► frontend (Next.js)
+  │                      │
+  │                      ├── HTTP :8000 ──► api (FastAPI)
+  │                                           │
+  │                                           ├── 6379 ◄──► redis
+  │                                           └── 3306 ◄──► mysql
+  │
+  └── WebSocket :8000/ws ◄──► api (FastAPI)
+                                  │
+                worker ◄──► 6379 ──► redis
+```
+
+**Explicación de las conexiones:**
+
+1. **Usuario → Frontend (HTTP :3000):** El usuario accede a la UI servida por Next.js. El frontend renderiza las páginas (landing, sala de espera, compra) vía SSR y CSR.
+2. **Frontend → API (HTTP :8000):** El frontend se comunica con FastAPI por HTTP dentro de la red Docker interna. Envía requests REST como `POST /api/queue/enter` o `POST /api/tickets/purchase`.
+3. **Usuario → API (WebSocket :8000/ws):** El browser abre una conexión WebSocket directa hacia FastAPI para recibir actualizaciones de posición en tiempo real.
+4. **API → Redis (6379):** FastAPI lee y escribe en Redis — cola de espera (`waiting_queue`), permisos (`allowed_users`), y Pub/Sub para broadcasts.
+5. **API → MySQL (3306):** FastAPI persiste datos en MySQL — tickets vendidos, eventos y usuarios.
+6. **Worker → Redis (6379):** El Worker solo se comunica con Redis. No tiene puerto expuesto porque no recibe requests de nadie — solo corre su loop interno cada segundo procesando la cola, moviendo usuarios a `allowed_users`, y publicando actualizaciones vía Pub/Sub.
+
+Los dos **volúmenes persistentes** (`redis-data` y `mysql-data`) aseguran que los datos sobrevivan reinicios o destrucciones de los contenedores.
+
 ## Docker Compose
 
 ```yaml

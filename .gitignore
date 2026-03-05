@@ -1,1 +1,25 @@
-.venv
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.*
+
+# IDEs
+.vscode/
+.idea/
+
+# Node.js (frontend)
+node_modules/
+.next/
+
+# OS
+.DS_Store
+Thumbs.db

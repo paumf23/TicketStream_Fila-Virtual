@@ -75,7 +75,7 @@ C4Component
 | Componente | Operaciones |
 |------------|-------------|
 | **Redis Repository** | `lpush()`, `lpop()`, `llen()`, `hset()`, `hget()`, `hdel()`, `publish()` |
-| **MySQL Repository** | `insert_ticket()`, `get_event()`, `update_capacity()`, `create_audit_log()` |
+| **MySQL Repository** | `insert_ticket()`, `insert_buyer()`, `insert_payment()`, `get_event()`, `update_capacity()` |
 
 ---
 

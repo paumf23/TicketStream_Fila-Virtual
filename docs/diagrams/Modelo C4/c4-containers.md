@@ -18,7 +18,7 @@ C4Container
         Container(worker, "Queue Worker", "Python + asyncio", "Procesa la cola cada segundo, mueve usuarios a permitidos")
         
         ContainerDb(redis, "Redis", "Redis 7+", "Cola de espera, usuarios permitidos, Pub/Sub")
-        ContainerDb(mysql, "MySQL", "MySQL 8+", "Eventos, tickets vendidos, usuarios, auditoría")
+        ContainerDb(mysql, "MySQL", "MySQL 8+", "Eventos, tickets, compradores, pagos")
     }
 
     Rel(user, frontend, "Navega la UI", "HTTPS :3000")
@@ -48,7 +48,7 @@ C4Container
 | Contenedor | Tecnología | Datos |
 |------------|------------|-------|
 | **Redis** | Redis 7+ | `waiting_queue` (LIST), `allowed_users` (HASH), `positions` (PubSub) |
-| **MySQL** | MySQL 8+ | `events`, `tickets`, `users`, `audit_log` |
+| **MySQL** | MySQL 8+ | `events`, `tickets`, `buyers`, `payments`, `queue_history` |
 
 ## Flujo de Datos
 
