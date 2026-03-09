@@ -38,6 +38,7 @@ async def initiate_purchase(
     dni: str,
     email: str,
     payment_method: str,
+    quantity: int = 1,
 ) -> dict:
 
     allowed = await redis_repository.is_allowed(event_id, user_id)
@@ -52,37 +53,47 @@ async def initiate_purchase(
         await redis_repository.remove_allowed(event_id, user_id)
         raise TicketNotFoundError(f"Evento {event_id} no encontrado")
 
-    capacity_reserved = await event_repository.update_remaining_capacity(
-        db, event_id, decrement=1
-    )
+    total_price = float(event.price) * quantity
 
-    if not capacity_reserved:
-        raise InsufficientCapacityError(
-            f"Evento {event_id} sin capacidad disponible. "
-            f"Las entradas se agotaron."
+    
+    async with db.begin_nested():
+        capacity_reserved = await event_repository.update_remaining_capacity(
+            db, event_id, decrement=quantity
         )
 
-    buyer = await buyer_repository.create_buyer(
-        db,
-        first_name=first_name,
-        last_name=last_name,
-        dni=dni,
-        email=email,
-    )
+        if not capacity_reserved:
+            raise InsufficientCapacityError(
+                f"Evento {event_id} sin capacidad suficiente para {quantity} entradas."
+            )
 
-    ticket = await ticket_repository.create_ticket(
-        db,
-        buyer_id=buyer.id,
-        event_id=event_id,
-        price_paid=float(event.price),
-    )
+        buyer = await buyer_repository.create_buyer(
+            db,
+            first_name=first_name,
+            last_name=last_name,
+            dni=dni,
+            email=email,
+        )
 
-    payment = await payment_repository.create_payment(
-        db,
-        ticket_id=ticket.id,
-        amount=float(event.price),
-        payment_method=payment_method,
-    )
+        ticket = await ticket_repository.create_ticket(
+            db,
+            buyer_id=buyer.id,
+            event_id=event_id,
+            price_paid=total_price,
+            quantity=quantity,
+        )
+
+        payment = await payment_repository.create_payment(
+            db,
+            ticket_id=ticket.id,
+            amount=total_price,
+            payment_method=payment_method,
+        )
+
+        
+        await ticket_repository.confirm_ticket(db, ticket.id)
+
+   
+    await db.commit()
 
     await redis_repository.remove_allowed(event_id, user_id)
 
@@ -94,75 +105,26 @@ async def initiate_purchase(
             db, active_record.id, exit_reason="purchased"
         )
 
+    
+    await db.refresh(ticket)
+
     return {
+        "status": "success",
+        "message": "Operación exitosa, gracias por su compra.",
         "ticket_id": ticket.id,
         "ticket_code": ticket.ticket_code,
+        "quantity": ticket.quantity,
         "buyer_id": buyer.id,
         "buyer_name": f"{first_name} {last_name}",
         "event_id": event_id,
         "event_name": event.name,
         "price_paid": float(ticket.price_paid),
-        "status": ticket.status,
+        "ticket_status": ticket.status,
         "payment_reference": payment.payment_reference,
-        "payment_method": payment.payment_method,
         "purchased_at": str(ticket.purchased_at),
+        "confirmed_at": str(ticket.confirmed_at),
     }
 
-
-
-async def confirm_purchase(
-    db: AsyncSession,
-    ticket_id: str,
-) -> dict:
-
-    ticket = await ticket_repository.get_ticket_by_id(db, ticket_id)
-    if ticket is None:
-        raise TicketNotFoundError(
-            f"Ticket {ticket_id} no encontrado en la base de datos"
-        )
-
-    if ticket.status != "pending":
-        raise TicketAlreadyProcessedError(
-            f"Ticket {ticket_id} ya fue procesado (estado actual: {ticket.status}). "
-            f"Solo tickets en estado 'pending' pueden ser confirmados."
-        )
-
-    confirmed = await ticket_repository.confirm_ticket(db, ticket_id)
-    if not confirmed:
-        raise TicketAlreadyProcessedError(
-            f"No se pudo confirmar el ticket {ticket_id}. "
-            f"Es posible que otro proceso lo haya modificado simultáneamente."
-        )
-
-    return {
-        "ticket_id": ticket_id,
-        "ticket_code": ticket.ticket_code,
-        "status": "confirmed",
-        "event_id": ticket.event_id,
-        "buyer_id": ticket.buyer_id,
-    }
-
-
-
-async def get_buyer_tickets(
-    db: AsyncSession,
-    buyer_id: str,
-) -> list[dict]:
-
-    tickets = await ticket_repository.get_tickets_by_buyer(db, buyer_id)
-
-    return [
-        {
-            "ticket_id": t.id,
-            "ticket_code": t.ticket_code,
-            "event_id": t.event_id,
-            "price_paid": float(t.price_paid),
-            "status": t.status,
-            "purchased_at": str(t.purchased_at),
-            "confirmed_at": str(t.confirmed_at) if t.confirmed_at else None,
-        }
-        for t in tickets
-    ]
 
 
 async def get_ticket_detail(

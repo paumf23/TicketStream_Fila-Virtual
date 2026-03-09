@@ -1,23 +1,4 @@
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# main.py — Punto de Entrada y Corazón de la Aplicación
-# ═══════════════════════════════════════════════════════════════════════════════
-# Este archivo es el corazón de la aplicación porque es el ORQUESTADOR.
-# Los routers, services y repositories son módulos independientes que por sí
-# solos no hacen nada: necesitan que main.py los ensamble y los conecte.
-#
-# Responsabilidades concretas:
-#   1. Crea la instancia de FastAPI (el objeto central que ES la aplicación).
-#   2. Configura el ciclo de vida (lifespan): qué ocurre al encender y apagar.
-#   3. Habilita CORS para que el frontend pueda comunicarse con el backend.
-#   4. Registra (monta) todos los routers bajo sus prefijos correspondientes.
-#
-#
-# Ejecución:
-#   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-# ═══════════════════════════════════════════════════════════════════════════════
-
-
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -32,7 +13,6 @@ from app.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Gestiona el ciclo de vida del servidor."""
 
     # ── STARTUP ──────────────────────────────────────────────────────────────
     from app.database import engine, Base

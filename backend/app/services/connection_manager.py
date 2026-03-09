@@ -20,7 +20,6 @@ class ConnectionManager:
         self._grace_period: dict[str, set[str]] = {}
 
     async def connect(self, websocket: WebSocket, event_id: str) -> None:
-     
         await websocket.accept()
         if event_id not in self._connections:
             self._connections[event_id] = set()

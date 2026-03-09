@@ -30,7 +30,7 @@ async def create_payment(
         payment_reference=_generate_payment_reference(),
     )
     db.add(payment)
-    await db.commit()
+    await db.flush()
     await db.refresh(payment)
     return payment
 

@@ -24,7 +24,7 @@ async def create_buyer(
         email=email,
     )
     db.add(buyer)
-    await db.commit()
+    await db.flush()
     await db.refresh(buyer)
     return buyer
 

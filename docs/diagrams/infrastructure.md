@@ -329,63 +329,36 @@ ENV HOSTNAME="0.0.0.0"
 CMD ["node", "server.js"]
 ```
 
-## Estructura de Directorios
+## Estructura de Directorios (Real)
 
 ```
-virtual-queue/
-├── docker-compose.yml
-├── Dockerfile                  # FastAPI (API pura)
-├── requirements.txt
-├── config/
-│   └── redis.conf
-├── migrations/
-│   └── init.sql
-├── app/                        # Backend (FastAPI)
-│   ├── __init__.py
-│   ├── main.py                 # FastAPI app (API pura, sin Jinja2)
-│   ├── worker.py               # Queue worker
-│   ├── config.py               # Settings
-│   ├── routers/
-│   ├── services/
-│   ├── repositories/
-│   └── models/
-├── frontend/                   # Frontend (Next.js)
-│   ├── Dockerfile.frontend
-│   ├── package.json
-│   ├── next.config.js
-│   ├── tsconfig.json
-│   ├── public/
-│   │   └── favicon.ico
-│   └── src/
-│       ├── app/                # App Router (Next.js 14+)
-│       │   ├── layout.tsx      # Root layout
-│       │   ├── page.tsx        # Landing — lista de eventos
-│       │   ├── event/
-│       │   │   └── [id]/
-│       │   │       └── page.tsx  # Detalle del evento
-│       │   ├── queue/
-│       │   │   └── [id]/
-│       │   │       └── page.tsx  # Sala de espera
-│       │   └── purchase/
-│       │       └── [id]/
-│       │           └── page.tsx  # Pantalla de compra
-│       ├── components/         # Componentes React reutilizables
-│       │   ├── QueueStatus.tsx
-│       │   ├── Timer.tsx
-│       │   ├── TicketCard.tsx
-│       │   ├── EventList.tsx
-│       │   └── ProgressBar.tsx
-│       ├── hooks/              # Custom hooks
-│       │   ├── useWebSocket.ts
-│       │   ├── useQueue.ts
-│       │   ├── useCountdown.ts
-│       │   └── useAuth.ts
-│       └── lib/                # Utilidades
-│           ├── api.ts          # API client (fetch wrapper)
-│           └── types.ts        # TypeScript types/interfaces
-└── docs/
-    ├── ARCHITECTURE.md
-    └── diagrams/
+Virtual Queue/
+├── docker-compose.yml          # Orquestador (MySQL, Redis, API, Worker)
+├── backend/                    # Contenedor de toda la lógica del servidor
+│   ├── Dockerfile              # Imagen para API y Worker
+│   ├── requirements.txt        # Dependencias de Python
+│   ├── app/                    # Código fuente FastAPI
+│   │   ├── main.py             # Punto de entrada
+│   │   ├── worker.py           # Procesador de cola
+│   │   ├── seed.py             # Script de carga de datos iniciales
+│   │   ├── database.py         # Configuración SQLAlchemy
+│   │   ├── redis.py            # Cliente de Redis
+│   │   ├── config.py           # Variables de entorno
+│   │   ├── dependencies.py     # Inyectores de FastAPI
+│   │   ├── models/             # Tablas MySQL (Base)
+│   │   ├── repositories/       # Acceso a datos (SQL/Redis)
+│   │   ├── services/           # Lógica de negocio (Complejo)
+│   │   │   └── connection_manager.py  # Gestor de WebSockets
+│   │   ├── routers/            # Endpoints de la API
+│   │   │   └── simulate.py     # Simulación de carga
+│   │   └── schemas/            # Validación Pydantic
+│   └── tests/                  # Pruebas unitarias/integración
+├── frontend/                   # Aplicación Next.js (Actualmente vacío)
+│   └── [Estructura planeada: src/, components/, etc.]
+├── docs/                       # Documentación y Diagramas
+│   ├── ARCHITECTURE.md
+│   └── diagrams/
+└── migrations/                 # [Planeado] Inicialización SQL
 ```
 
 ## Comandos de Desarrollo

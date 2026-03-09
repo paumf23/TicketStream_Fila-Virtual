@@ -21,6 +21,7 @@ async def create_ticket(
     buyer_id: str,
     event_id: str,
     price_paid: float,
+    quantity: int = 1,
 ) -> Ticket:
 
     ticket = Ticket(
@@ -29,9 +30,10 @@ async def create_ticket(
         event_id=event_id,
         ticket_code=_generate_ticket_code(),
         price_paid=price_paid,
+        quantity=quantity,
     )
     db.add(ticket)
-    await db.commit()
+    await db.flush()
     await db.refresh(ticket)
     return ticket
 
@@ -74,6 +76,6 @@ async def confirm_ticket(db: AsyncSession, ticket_id: str) -> bool:
         .where(Ticket.status == "pending")
         .values(status="confirmed", confirmed_at=datetime.utcnow())
     )
-    await db.commit()
+    await db.flush()
     return result.rowcount > 0
 

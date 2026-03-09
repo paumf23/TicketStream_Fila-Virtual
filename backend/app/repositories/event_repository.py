@@ -33,7 +33,7 @@ async def get_event_by_id(db: AsyncSession, event_id: str) -> Optional[Event]:
 async def create_event(db: AsyncSession, event_data: dict) -> Event:
     event = Event(id=str(uuid4()), **event_data)
     db.add(event)
-    await db.commit()
+    await db.flush()
     await db.refresh(event)
     return event
 
@@ -48,7 +48,7 @@ async def update_remaining_capacity(
         .where(Event.remaining_capacity >= decrement)
         .values(remaining_capacity=Event.remaining_capacity - decrement)
     )
-    await db.commit()
+    await db.flush()
     return result.rowcount > 0
 
 
@@ -61,5 +61,5 @@ async def update_event_status(
         .where(Event.id == event_id)
         .values(status=new_status)
     )
-    await db.commit()
+    await db.flush()
     return result.rowcount > 0

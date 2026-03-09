@@ -1,25 +1,4 @@
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# event_service.py — Capa de Servicio para la gestión de Eventos
-# ═══════════════════════════════════════════════════════════════════════════════
-# Este módulo implementa la LÓGICA DE NEGOCIO para la administración de eventos
-# dentro del sistema Virtual Queue. Actúa como intermediario entre los endpoints
-# (routers/controllers) y la capa de acceso a datos (repositories).
-#
-# Responsabilidades principales:
-#   1. Crear nuevos eventos con validaciones de negocio.
-#   2. Consultar eventos (todos, activos, por ID).
-#   3. Cambiar el estado de un evento (activar, marcar como sold_out).
-
-#
-# Patrón utilizado: Service Layer
-#   - Los routers llaman a funciones de este módulo.
-#   - Este módulo orquesta llamadas a los repositories necesarios.
-#   - Las excepciones personalizadas se propagan hacia los routers,
-#     que las capturan y devuelven las respuestas HTTP apropiadas.
-# ═══════════════════════════════════════════════════════════════════════════════
-
-
 from datetime import datetime
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -128,21 +107,6 @@ async def create_event(
     return _event_to_dict(event)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# FUNCIONES DE TRANSICIÓN DE ESTADO
-# ═══════════════════════════════════════════════════════════════════════════════
-# Los eventos siguen un ciclo de vida con estados predefinidos:
-#
-#   draft ──► active ──► sold_out
-#
-# Reglas de transición:
-#   - Solo un evento en 'draft' puede ser activado.
-#   - Solo un evento 'active' puede ser marcado como sold_out.
-#   - Un evento 'sold_out' NO puede volver a 'active'.
-#     (inmutabilidad de estados terminales)
-#
-
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 async def activate_event(db: AsyncSession, event_id: str) -> dict:
@@ -209,18 +173,8 @@ async def mark_sold_out(db: AsyncSession, event_id: str) -> dict:
     )
 
 
-
     updated_event = await event_repository.get_event_by_id(db, event_id)
     return _event_to_dict(updated_event)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# FUNCIÓN DE CONSULTA CON ESTADÍSTICAS
-# ═══════════════════════════════════════════════════════════════════════════════
-# Usada desde la pestaña de administración para los gráficos en tiempo real.
-# Combina datos de MySQL (evento) con datos de Redis (cola) para ofrecer
-# una vista enriquecida del estado actual del evento.
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
@@ -247,13 +201,6 @@ async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
     return result
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# FUNCIÓN HELPER PRIVADA
-# ═══════════════════════════════════════════════════════════════════════════════
-# Por convención, las funciones que comienzan con _ son "privadas" del módulo.
-# No están diseñadas para ser importadas externamente.
-# ═══════════════════════════════════════════════════════════════════════════════
-
 
 def _event_to_dict(event) -> dict:
     return {
@@ -263,9 +210,9 @@ def _event_to_dict(event) -> dict:
         "image_url": event.image_url,
         "total_capacity": event.total_capacity,
         "remaining_capacity": event.remaining_capacity,
-        "price": float(event.price),          # Decimal → float para JSON
+        "price": float(event.price),          
         "currency": event.currency,
-        "event_date": str(event.event_date),   # datetime → str ISO 8601
+        "event_date": str(event.event_date),   
         "sale_start": str(event.sale_start),
         "sale_end": str(event.sale_end),
         "status": event.status,

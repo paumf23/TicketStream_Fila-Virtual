@@ -1,0 +1,89 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# docker-compose.yml — Orquestación de toda la Infraestructura
+# ═══════════════════════════════════════════════════════════════════════════════
+# Este archivo permite levantar con un solo comando (docker-compose up) los cuatro
+# servicios que hacen que tu sistema funcione:
+#   1. MySQL: Base de datos persistente.
+#   2. Redis: Motor de la cola virtual y WebSockets.
+#   3. API (FastAPI): Controlador de rutas y lógica de negocio.
+#   4. Worker: El motor de segundo plano que avanza la cola.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # --- Base de Datos MySQL ---
+  db:
+    image: mysql:8.0
+    container_name: vq_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: virtual_queue
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - vq_network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 5s
+      retries: 5
+
+  # --- Motor de Cola y Cache (Redis) ---
+  redis:
+    image: redis:7.0-alpine
+    container_name: vq_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - vq_network
+
+  # --- Backend API (FastAPI) ---
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vq_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=mysql+asyncmy://root:secret@db:3306/virtual_queue
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - vq_network
+
+  # --- Worker (Procesador de Cola) ---
+  # IMPORTANTE: Reutilizamos la misma imagen que la API, pero cambiamos el comando inicial.
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vq_worker
+    restart: always
+    command: [ "python", "-m", "app.worker" ]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=mysql+asyncmy://root:secret@db:3306/virtual_queue
+    depends_on:
+      api:
+        condition: service_started
+    networks:
+      - vq_network
+
+networks:
+  vq_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:

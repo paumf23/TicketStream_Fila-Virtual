@@ -35,6 +35,7 @@ class Ticket(Base):
 
    
     price_paid: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    quantity: Mapped[int] = mapped_column(default=1)
 
     status: Mapped[str] = mapped_column(
         SAEnum("pending", "confirmed", "used", name="ticket_status"),

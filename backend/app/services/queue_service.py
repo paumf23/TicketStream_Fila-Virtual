@@ -134,9 +134,6 @@ async def leave_queue(
         db, existing.id, exit_reason="abandoned"
     )
 
-
-
-
     return {
         "user_id": user_id,
         "event_id": event_id,
