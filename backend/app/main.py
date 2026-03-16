@@ -11,26 +11,43 @@ from app.config import settings
 # LIFESPAN — Ciclo de Vida de la Aplicación
 # ═══════════════════════════════════════════════════════════════════════════════
 
+import logging
+
+# Configuración de Logging Estructurado (Básico para Consola)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("app.main")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("Iniciando ciclo de vida de la aplicación...")
 
     # ── STARTUP ──────────────────────────────────────────────────────────────
     from app.database import engine, Base
     from app.redis import redis_pool
+    
+    # Intentar conectar a Redis (No bloqueante para el Smoke Test)
     try:
         await redis_pool.ping()
-        print("✅ Redis conectado")
+        logger.info("✅ Redis conectado correctamente")
     except Exception as e:
-        print(f"❌ Error conectando a Redis: {e}")
-        raise
-
+        logger.error(f"⚠️ Redis no disponible (Esperado sin Docker): {e}")
+        # No re-lanzamos el error para permitir que la API prenda e ir al Swagger
     
-    if settings.ENVIRONMENT == "development":
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-            print("✅ MySQL: tablas verificadas/creadas")
+    # Intentar conectar a MySQL (No bloqueante para el Smoke Test)
+    try:
+        if settings.ENVIRONMENT == "development":
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+                logger.info("✅ MySQL: tablas verificadas/creadas")
+    except Exception as e:
+        logger.error(f"⚠️ MySQL no disponible (Esperado sin Docker): {e}")
 
-    print(f"🚀 Virtual Queue API iniciada (env: {settings.ENVIRONMENT})")
+    logger.info(f"🚀 Virtual Queue API iniciada (entorno: {settings.ENVIRONMENT})")
 
     # ── YIELD (línea divisoria temporal) ─────────────────────────────────────
     
@@ -38,12 +55,12 @@ async def lifespan(app: FastAPI):
 
     # ── SHUTDOWN ─────────────────────────────────────────────────────────────
     await redis_pool.aclose()
-    print("🔌 Redis desconectado")
+    logger.info("🔌 Redis desconectado")
 
     await engine.dispose()
-    print("🔌 MySQL desconectado")
+    logger.info("🔌 MySQL desconectado")
 
-    print("👋 Virtual Queue API finalizada")
+    logger.info("👋 Virtual Queue API finalizada correctamente")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -9,6 +9,9 @@ from app.repositories import redis_repository
 from app.repositories import event_repository
 from app.repositories import queue_history_repository
 
+import logging
+logger = logging.getLogger("app.services.queue")
+
 
 
 class EventNotFoundError(Exception):
@@ -59,6 +62,7 @@ async def enter_queue(
     await redis_repository.set_user_name(user_id, first_name, last_name)
 
     position = await redis_repository.queue_push(event_id, user_id)
+    logger.info(f"Usuario {user_id} ingresó a la cola del evento {event_id}. Posición: {position}")
 
 
     history_record = await queue_history_repository.record_entry(
@@ -128,6 +132,7 @@ async def leave_queue(
         )
 
     removed = await redis_repository.queue_remove(event_id, user_id)
+    logger.info(f"Usuario {user_id} abandonó la cola del evento {event_id}")
 
   
     await queue_history_repository.record_exit(

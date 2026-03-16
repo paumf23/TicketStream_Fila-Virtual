@@ -10,6 +10,9 @@ from app.repositories import queue_history_repository
 from app.repositories import buyer_repository
 from app.repositories import payment_repository
 
+import logging
+logger = logging.getLogger("app.services.purchase")
+
 
 
 class UserNotAllowedError(Exception):
@@ -40,6 +43,7 @@ async def initiate_purchase(
     payment_method: str,
     quantity: int = 1,
 ) -> dict:
+    logger.info(f"Iniciando flujo de compra: Usuario {user_id} para evento {event_id} (Cantidad: {quantity})")
 
     allowed = await redis_repository.is_allowed(event_id, user_id)
     if not allowed:
@@ -104,6 +108,8 @@ async def initiate_purchase(
         await queue_history_repository.record_exit(
             db, active_record.id, exit_reason="purchased"
         )
+    
+    logger.info(f"Compra finalizada con éxito: Ticket {ticket.id} para usuario {user_id}")
 
     
     await db.refresh(ticket)
