@@ -1,11 +1,11 @@
 
 
 from uuid import uuid4
-from typing import Optional
+
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.event import Event
 
+from app.models.event import Event
 
 
 async def get_all_events(db: AsyncSession) -> list[Event]:
@@ -22,7 +22,7 @@ async def get_active_events(db: AsyncSession) -> list[Event]:
 
 
 
-async def get_event_by_id(db: AsyncSession, event_id: str) -> Optional[Event]:
+async def get_event_by_id(db: AsyncSession, event_id: str) -> Event | None:
     result = await db.execute(
         select(Event).where(Event.id == event_id)
     )

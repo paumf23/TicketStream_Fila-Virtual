@@ -2,7 +2,8 @@
 
 from datetime import datetime
 
-from sqlalchemy import String, Integer, BigInteger, DateTime, ForeignKey, Enum as SAEnum
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -26,12 +27,12 @@ class QueueHistory(Base):
 
     initial_position: Mapped[int] = mapped_column(Integer)
 
-    
+
     entered_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
     )
 
-    
+
     allowed_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True
     )
@@ -40,13 +41,13 @@ class QueueHistory(Base):
         DateTime, nullable=True
     )
 
-    
+
     exit_reason: Mapped[str | None] = mapped_column(
         SAEnum("purchased", "expired", "abandoned", "disconnected", name="exit_reason"),
         nullable=True,
     )
 
-   
+
     wait_time_seconds: Mapped[int | None] = mapped_column(
         Integer, nullable=True
     )

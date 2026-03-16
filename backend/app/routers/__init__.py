@@ -1,15 +1,10 @@
-from app.routers import health
-from app.routers import events
-from app.routers import queue
-from app.routers import tickets
-from app.routers import simulate
-from app.routers import websocket_handler
+from app.routers import events, health, queue, simulate, tickets, websocket_handler
 
 __all__ = [
-    "health",
     "events",
+    "health",
     "queue",
-    "tickets",
     "simulate",
+    "tickets",
     "websocket_handler",
 ]

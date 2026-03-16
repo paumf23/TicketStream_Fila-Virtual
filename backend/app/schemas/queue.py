@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+
 class EnterQueueRequest(BaseModel):
     user_id: str = Field(
         ...,

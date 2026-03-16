@@ -3,18 +3,15 @@
 import asyncio
 import random
 import secrets
-from uuid import uuid4
 from datetime import datetime, timedelta
+from uuid import uuid4
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.database import async_engine, async_session, Base
-from app.models.event import Event
+from app.database import AsyncSessionLocal, Base, engine
 from app.models.buyer import Buyer
-from app.models.ticket import Ticket
+from app.models.event import Event
 from app.models.payment import Payment
 from app.models.queue_history import QueueHistory
-
+from app.models.ticket import Ticket
 
 FIRST_NAMES = [
     "Martín", "Lucía", "Santiago", "Valentina", "Mateo",
@@ -113,12 +110,12 @@ def _generate_payment_reference() -> str:
 async def seed_database():
     """Carga datos iniciales en la base de datos."""
 
-    async with async_engine.begin() as conn:
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    async with async_session() as db:
+    async with AsyncSessionLocal() as db:
         # Verificar si ya hay datos
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
         result = await db.execute(select(func.count()).select_from(Event))
         count = result.scalar()
         if count > 0:
@@ -162,7 +159,7 @@ async def seed_database():
             num_purchases = min(50, event.total_capacity // 100)
             num_queue_total = num_purchases + random.randint(20, 60)
 
-            for j in range(num_purchases):
+            for _ in range(num_purchases):
                 first_name = random.choice(FIRST_NAMES)
                 last_name = random.choice(LAST_NAMES)
 
@@ -197,7 +194,7 @@ async def seed_database():
                 )
                 db.add(payment)
 
-                
+
                 entered = now - timedelta(hours=random.randint(1, 48), minutes=random.randint(0, 59))
                 wait_seconds = random.randint(30, 600)
                 queue_record = QueueHistory(
@@ -217,12 +214,12 @@ async def seed_database():
                 total_payments += 1
                 total_queue_records += 1
 
-            
+
             event.remaining_capacity -= num_purchases
 
-            
+
             non_purchase_count = num_queue_total - num_purchases
-            for k in range(non_purchase_count):
+            for _ in range(non_purchase_count):
                 exit_reason = random.choice(["expired", "abandoned", "disconnected"])
                 entered = now - timedelta(hours=random.randint(1, 48), minutes=random.randint(0, 59))
                 wait_seconds = random.randint(10, 900)

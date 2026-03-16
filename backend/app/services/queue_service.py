@@ -1,32 +1,31 @@
 
 
 
-from typing import Optional
+
+import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories import redis_repository
-from app.repositories import event_repository
-from app.repositories import queue_history_repository
+from app.exceptions import BadRequestError, ConflictError, NotFoundError
+from app.repositories import event_repository, queue_history_repository, redis_repository
 
-import logging
 logger = logging.getLogger("app.services.queue")
 
 
 
-class EventNotFoundError(Exception):
+class EventNotFoundError(NotFoundError):
     pass
 
 
-class EventNotActiveError(Exception):
+class EventNotActiveError(BadRequestError):
     pass
 
 
-class AlreadyInQueueError(Exception):
+class AlreadyInQueueError(ConflictError):
     pass
 
 
-class NotInQueueError(Exception):
+class NotInQueueError(NotFoundError):
     pass
 
 
@@ -38,18 +37,18 @@ async def enter_queue(
     first_name: str,
     last_name: str,
 ) -> dict:
-   
+
     event = await event_repository.get_event_by_id(db, event_id)
     if event is None:
         raise EventNotFoundError(f"Evento {event_id} no encontrado")
 
-    
+
     if event.status != "active":
         raise EventNotActiveError(
             f"Evento {event_id} no está activo (status: {event.status})"
         )
 
-    
+
     existing = await queue_history_repository.get_active_record(
         db, user_id, event_id
     )
@@ -68,6 +67,7 @@ async def enter_queue(
     history_record = await queue_history_repository.record_entry(
         db, user_id, event_id, position
     )
+    await db.commit()
 
 
     return {
@@ -76,7 +76,7 @@ async def enter_queue(
         "last_name": last_name,
         "event_id": event_id,
         "position": position,
-        "queue_length": position,  
+        "queue_length": position,
         "history_record_id": history_record.id,
         "event_name": event.name,
     }
@@ -88,7 +88,7 @@ async def get_position(
     user_id: str,
     event_id: str,
 ) -> dict:
-   
+
     position = await redis_repository.queue_position(event_id, user_id)
     if position is None:
         raise NotInQueueError(
@@ -98,18 +98,18 @@ async def get_position(
 
     total = await redis_repository.queue_length(event_id)
 
-   
+
     return {
         "user_id": user_id,
         "event_id": event_id,
-        "position": position + 1,   
+        "position": position + 1,
         "queue_length": total,
         "estimated_wait": _estimate_wait(position),
     }
 
 
 def _estimate_wait(position: int) -> str:
-   
+
     minutes = max(1, position // 600 + 1)
     if minutes == 1:
         return "Menos de 1 minuto"
@@ -122,7 +122,7 @@ async def leave_queue(
     user_id: str,
     event_id: str,
 ) -> dict:
-    
+
     existing = await queue_history_repository.get_active_record(
         db, user_id, event_id
     )
@@ -131,13 +131,14 @@ async def leave_queue(
             f"Usuario {user_id} no está en la cola del evento {event_id}"
         )
 
-    removed = await redis_repository.queue_remove(event_id, user_id)
+    await redis_repository.queue_remove(event_id, user_id)
     logger.info(f"Usuario {user_id} abandonó la cola del evento {event_id}")
 
-  
+
     await queue_history_repository.record_exit(
         db, existing.id, exit_reason="abandoned"
     )
+    await db.commit()
 
     return {
         "user_id": user_id,

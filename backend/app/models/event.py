@@ -3,7 +3,8 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import String, Integer, Text, DateTime, Numeric, Enum as SAEnum
+from sqlalchemy import DateTime, Integer, Numeric, String, Text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -27,21 +28,21 @@ class Event(Base):
 
     remaining_capacity: Mapped[int] = mapped_column(Integer)
 
- 
+
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
 
-    
+
     currency: Mapped[str] = mapped_column(String(3), default="ARS")
 
-    
+
     event_date: Mapped[datetime] = mapped_column(DateTime)
 
-   
+
     sale_start: Mapped[datetime] = mapped_column(DateTime)
-    
+
     sale_end: Mapped[datetime] = mapped_column(DateTime)
 
-   
+
     status: Mapped[str] = mapped_column(
         SAEnum("draft", "active", "sold_out", name="event_status"),
         default="draft",

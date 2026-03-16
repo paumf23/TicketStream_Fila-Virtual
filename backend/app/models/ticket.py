@@ -3,7 +3,8 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import String, DateTime, Numeric, ForeignKey, Enum as SAEnum
+from sqlalchemy import DateTime, ForeignKey, Numeric, String
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -13,27 +14,27 @@ from app.database import Base
 class Ticket(Base):
     __tablename__ = "tickets"
 
-    
+
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True
     )
 
-  
+
     buyer_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("buyers.id"), index=True
     )
 
-   
+
     event_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("events.id"), index=True
     )
 
-   
+
     ticket_code: Mapped[str] = mapped_column(
         String(50), unique=True, index=True
     )
 
-   
+
     price_paid: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     quantity: Mapped[int] = mapped_column(default=1)
 

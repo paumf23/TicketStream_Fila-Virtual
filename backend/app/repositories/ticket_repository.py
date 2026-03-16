@@ -1,10 +1,8 @@
 
 
-from uuid import uuid4
 import secrets
-
-from typing import Optional
-from datetime import datetime
+from datetime import UTC, datetime
+from uuid import uuid4
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,14 +37,14 @@ async def create_ticket(
 
 
 
-async def get_ticket_by_id(db: AsyncSession, ticket_id: str) -> Optional[Ticket]:
+async def get_ticket_by_id(db: AsyncSession, ticket_id: str) -> Ticket | None:
     result = await db.execute(
         select(Ticket).where(Ticket.id == ticket_id)
     )
     return result.scalar_one_or_none()
 
 
-async def get_ticket_by_code(db: AsyncSession, ticket_code: str) -> Optional[Ticket]:
+async def get_ticket_by_code(db: AsyncSession, ticket_code: str) -> Ticket | None:
     result = await db.execute(
         select(Ticket).where(Ticket.ticket_code == ticket_code)
     )
@@ -74,7 +72,7 @@ async def confirm_ticket(db: AsyncSession, ticket_id: str) -> bool:
         update(Ticket)
         .where(Ticket.id == ticket_id)
         .where(Ticket.status == "pending")
-        .values(status="confirmed", confirmed_at=datetime.utcnow())
+        .values(status="confirmed", confirmed_at=datetime.now(UTC))
     )
     await db.flush()
     return result.rowcount > 0

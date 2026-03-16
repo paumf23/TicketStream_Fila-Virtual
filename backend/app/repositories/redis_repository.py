@@ -1,6 +1,5 @@
 
 
-from typing import Optional
 
 import redis.asyncio as aioredis
 
@@ -11,8 +10,8 @@ def _queue_key(event_id: str) -> str:
     return f"queue:{event_id}"
 
 
-def _allowed_key(event_id: str) -> str:
-    return f"allowed_users:{event_id}"
+def _allowed_key(event_id: str, user_id: str) -> str:
+    return f"allowed:{event_id}:{user_id}"
 
 
 def _channel_key(event_id: str) -> str:
@@ -29,12 +28,12 @@ async def queue_pop(event_id: str, batch_size: int = 10) -> list[str]:
     for _ in range(batch_size):
         user_id = await redis_pool.lpop(_queue_key(event_id))
         if user_id is None:
-            break  
+            break
         users.append(user_id)
     return users
 
 
-async def queue_position(event_id: str, user_id: str) -> Optional[int]:
+async def queue_position(event_id: str, user_id: str) -> int | None:
     pos = await redis_pool.lpos(_queue_key(event_id), user_id)
     return pos
 
@@ -48,20 +47,18 @@ async def queue_remove(event_id: str, user_id: str) -> bool:
     return removed > 0
 
 
-
 async def set_allowed(event_id: str, user_id: str, ttl_seconds: int = 300) -> None:
-    key = _allowed_key(event_id)
-    await redis_pool.hset(key, user_id, "1")
-    await redis_pool.expire(key, ttl_seconds)
+    key = _allowed_key(event_id, user_id)
+    await redis_pool.set(key, "1", ex=ttl_seconds)
 
 
 async def is_allowed(event_id: str, user_id: str) -> bool:
-    result = await redis_pool.hget(_allowed_key(event_id), user_id)
+    result = await redis_pool.get(_allowed_key(event_id, user_id))
     return result is not None
 
 
 async def remove_allowed(event_id: str, user_id: str) -> None:
-    await redis_pool.hdel(_allowed_key(event_id), user_id)
+    await redis_pool.delete(_allowed_key(event_id, user_id))
 
 
 
@@ -70,21 +67,21 @@ async def publish(event_id: str, message: str) -> int:
 
 
 async def subscribe(event_id: str) -> aioredis.client.PubSub:
-  
+
     pubsub = redis_pool.pubsub()
     await pubsub.subscribe(_channel_key(event_id))
     return pubsub
 
 
 def _user_name_key(user_id: str) -> str:
- 
+
     return f"user_name:{user_id}"
 
 
 async def set_user_name(
     user_id: str, first_name: str, last_name: str
 ) -> None:
-    
+
     key = _user_name_key(user_id)
     await redis_pool.hset(key, mapping={
         "first_name": first_name,
@@ -93,7 +90,7 @@ async def set_user_name(
     await redis_pool.expire(key, 3600)
 
 
-async def get_user_name(user_id: str) -> Optional[dict]:
+async def get_user_name(user_id: str) -> dict | None:
 
     key = _user_name_key(user_id)
     data = await redis_pool.hgetall(key)

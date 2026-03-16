@@ -2,7 +2,8 @@
 
 from datetime import datetime
 
-from sqlalchemy import String, DateTime, Numeric, ForeignKey, Enum as SAEnum
+from sqlalchemy import DateTime, ForeignKey, Numeric, String
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 

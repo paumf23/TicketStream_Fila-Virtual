@@ -1,0 +1,33 @@
+# ═══════════════════════════════════════════════════════════════
+# pyproject.toml — Configuración de Herramientas de Desarrollo
+# ═══════════════════════════════════════════════════════════════
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort (imports ordenados)
+    "UP",    # pyupgrade (syntax moderna)
+    "B",     # flake8-bugbear (bugs comunes)
+    "SIM",   # flake8-simplify
+    "RUF",   # reglas específicas de ruff
+]
+ignore = [
+    "E501",  # line too long (lo maneja line-length)
+    "B008",  # do not perform function calls in argument defaults (FastAPI Depends)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"app/main.py" = ["E402"]  # imports después de crear la app (patrón FastAPI)
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

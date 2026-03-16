@@ -1,10 +1,8 @@
 
-from typing import Optional
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-
 
 from app.models.queue_history import QueueHistory
 
@@ -15,14 +13,14 @@ async def record_entry(
     event_id: str,
     initial_position: int,
 ) -> QueueHistory:
-  
+
     record = QueueHistory(
         user_id=user_id,
         event_id=event_id,
         initial_position=initial_position,
     )
     db.add(record)
-    await db.commit()
+    await db.flush()
     await db.refresh(record)
     return record
 
@@ -32,9 +30,9 @@ async def record_allowed(db: AsyncSession, record_id: int) -> bool:
     result = await db.execute(
         update(QueueHistory)
         .where(QueueHistory.id == record_id)
-        .values(allowed_at=datetime.utcnow())
+        .values(allowed_at=datetime.now(UTC))
     )
-    await db.commit()
+    await db.flush()
     return result.rowcount > 0
 
 
@@ -51,7 +49,7 @@ async def record_exit(
     if record is None:
         return False
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     wait_seconds = int((now - record.entered_at).total_seconds())
 
     await db.execute(
@@ -63,14 +61,14 @@ async def record_exit(
             wait_time_seconds=wait_seconds,
         )
     )
-    await db.commit()
+    await db.flush()
     return True
 
 
 async def get_history_by_event(
     db: AsyncSession, event_id: str
 ) -> list[QueueHistory]:
-   
+
     result = await db.execute(
         select(QueueHistory).where(QueueHistory.event_id == event_id)
     )
@@ -79,8 +77,8 @@ async def get_history_by_event(
 
 async def get_active_record(
     db: AsyncSession, user_id: str, event_id: str
-) -> Optional[QueueHistory]:
-   
+) -> QueueHistory | None:
+
     result = await db.execute(
         select(QueueHistory)
         .where(QueueHistory.user_id == user_id)

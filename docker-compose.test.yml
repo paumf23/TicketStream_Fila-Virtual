@@ -21,7 +21,7 @@ services:
     volumes:
       - influxdb-data:/var/lib/influxdb
     networks:
-      - virtual-queue-network
+      - vq_network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "influx", "-execute", "SHOW DATABASES"]
@@ -50,7 +50,7 @@ services:
       influxdb:
         condition: service_healthy
     networks:
-      - virtual-queue-network
+      - vq_network
     restart: unless-stopped
 
   # ============================================
@@ -66,7 +66,7 @@ services:
     volumes:
       - ./tests/load/scripts:/scripts
     networks:
-      - virtual-queue-network
+      - vq_network
     depends_on:
       influxdb:
         condition: service_healthy
@@ -77,8 +77,8 @@ services:
 # REDES (usa la misma red del stack principal)
 # ============================================
 networks:
-  virtual-queue-network:
-    driver: bridge
+  vq_network:
+    external: true
 
 # ============================================
 # VOLÚMENES
@@ -86,3 +86,4 @@ networks:
 volumes:
   influxdb-data:
     driver: local
+

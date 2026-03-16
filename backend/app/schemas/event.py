@@ -1,6 +1,7 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, Field
+
 
 class CreateEventRequest(BaseModel):
     name: str = Field(
@@ -10,11 +11,11 @@ class CreateEventRequest(BaseModel):
         description="Nombre del evento",
         examples=["Lollapalooza Argentina 2026"],
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         description="Descripción opcional del evento",
     )
-    image_url: Optional[str] = Field(
+    image_url: str | None = Field(
         default=None,
         max_length=500,
         description="URL de la imagen del evento (para las cards del frontend)",

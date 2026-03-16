@@ -1,7 +1,6 @@
 
-from uuid import uuid4
 import secrets
-from typing import Optional
+from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,7 +36,7 @@ async def create_payment(
 
 async def get_payment_by_ticket_id(
     db: AsyncSession, ticket_id: str
-) -> Optional[Payment]:
+) -> Payment | None:
     result = await db.execute(
         select(Payment).where(Payment.ticket_id == ticket_id)
     )

@@ -4,17 +4,17 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-import uuid
 import random
+import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
-from app.repositories import redis_repository
-from app.repositories import event_repository
-
+from app.exceptions import BadRequestError, NotFoundError
+from app.repositories import event_repository, redis_repository
+from app.schemas.responses import SimulateLoadResponse
+from app.schemas.simulate import SimulateLoadRequest
 
 FIRST_NAMES = [
     "Martín", "Lucía", "Santiago", "Valentina", "Mateo",
@@ -35,13 +35,11 @@ LAST_NAMES = [
 ]
 
 
-from app.schemas.simulate import SimulateLoadRequest
-
 
 router = APIRouter()
 
 
-@router.post("/load", status_code=201)
+@router.post("/load", status_code=201, response_model=SimulateLoadResponse)
 async def simulate_load(
     body: SimulateLoadRequest,
     db: AsyncSession = Depends(get_db),
@@ -49,18 +47,14 @@ async def simulate_load(
 
     event = await event_repository.get_event_by_id(db, body.event_id)
     if event is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Evento {body.event_id} no encontrado",
-        )
+        raise NotFoundError(f"Evento {body.event_id} no encontrado")
     if event.status != "active":
-        raise HTTPException(
-            status_code=400,
-            detail=f"Evento {body.event_id} no está activo (status: {event.status})",
+        raise BadRequestError(
+            f"Evento {body.event_id} no está activo (status: {event.status})"
         )
 
     created_users = []
-    for i in range(body.num_users):
+    for _ in range(body.num_users):
         user_id = f"sim-{uuid.uuid4().hex[:12]}"
         first_name = random.choice(FIRST_NAMES)
         last_name = random.choice(LAST_NAMES)

@@ -1,6 +1,5 @@
 
 from uuid import uuid4
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +30,7 @@ async def create_buyer(
 
 async def get_buyer_by_id(
     db: AsyncSession, buyer_id: str
-) -> Optional[Buyer]:
+) -> Buyer | None:
     result = await db.execute(
         select(Buyer).where(Buyer.id == buyer_id)
     )
@@ -40,7 +39,7 @@ async def get_buyer_by_id(
 
 async def get_buyer_by_dni(
     db: AsyncSession, dni: str
-) -> Optional[Buyer]:
+) -> Buyer | None:
     result = await db.execute(
         select(Buyer).where(Buyer.dni == dni)
     )

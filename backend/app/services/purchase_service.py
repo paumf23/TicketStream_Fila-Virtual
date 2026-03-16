@@ -1,33 +1,36 @@
 
-from typing import Optional
+
+import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories import redis_repository
-from app.repositories import event_repository
-from app.repositories import ticket_repository
-from app.repositories import queue_history_repository
-from app.repositories import buyer_repository
-from app.repositories import payment_repository
+from app.exceptions import ConflictError, ForbiddenError, NotFoundError
+from app.repositories import (
+    buyer_repository,
+    event_repository,
+    payment_repository,
+    queue_history_repository,
+    redis_repository,
+    ticket_repository,
+)
 
-import logging
 logger = logging.getLogger("app.services.purchase")
 
 
 
-class UserNotAllowedError(Exception):
+class UserNotAllowedError(ForbiddenError):
     pass
 
 
-class InsufficientCapacityError(Exception):
+class InsufficientCapacityError(ConflictError):
     pass
 
 
-class TicketNotFoundError(Exception):
+class TicketNotFoundError(NotFoundError):
     pass
 
 
-class TicketAlreadyProcessedError(Exception):
+class TicketAlreadyProcessedError(ConflictError):
     pass
 
 
@@ -59,7 +62,7 @@ async def initiate_purchase(
 
     total_price = float(event.price) * quantity
 
-    
+
     async with db.begin_nested():
         capacity_reserved = await event_repository.update_remaining_capacity(
             db, event_id, decrement=quantity
@@ -93,10 +96,10 @@ async def initiate_purchase(
             payment_method=payment_method,
         )
 
-        
+
         await ticket_repository.confirm_ticket(db, ticket.id)
 
-   
+
     await db.commit()
 
     await redis_repository.remove_allowed(event_id, user_id)
@@ -108,10 +111,10 @@ async def initiate_purchase(
         await queue_history_repository.record_exit(
             db, active_record.id, exit_reason="purchased"
         )
-    
+
     logger.info(f"Compra finalizada con éxito: Ticket {ticket.id} para usuario {user_id}")
 
-    
+
     await db.refresh(ticket)
 
     return {

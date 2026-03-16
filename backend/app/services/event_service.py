@@ -1,36 +1,37 @@
 
 from datetime import datetime
-from typing import Optional, List
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.repositories import event_repository      
-from app.repositories import redis_repository       
+
+from app.exceptions import BadRequestError, ConflictError, NotFoundError, ValidationError
+from app.repositories import event_repository, redis_repository
 
 
-class EventNotFoundError(Exception):
+class EventNotFoundError(NotFoundError):
     pass
 
 
-class EventAlreadyActiveError(Exception):
+class EventAlreadyActiveError(ConflictError):
     pass
 
 
-class InvalidEventStatusError(Exception):
+class InvalidEventStatusError(BadRequestError):
     pass
 
 
-class InvalidEventDataError(Exception):
+class InvalidEventDataError(ValidationError):
     pass
 
 
-async def get_all_events(db: AsyncSession) -> List[dict]:
-   
+async def get_all_events(db: AsyncSession) -> list[dict]:
+
     events = await event_repository.get_all_events(db)
 
     return [_event_to_dict(e) for e in events]
 
 
-async def get_active_events(db: AsyncSession) -> List[dict]:
-    
+async def get_active_events(db: AsyncSession) -> list[dict]:
+
     events = await event_repository.get_active_events(db)
     return [_event_to_dict(e) for e in events]
 
@@ -49,8 +50,8 @@ async def get_event_by_id(db: AsyncSession, event_id: str) -> dict:
 async def create_event(
     db: AsyncSession,
     name: str,
-    description: Optional[str],
-    image_url: Optional[str],
+    description: str | None,
+    image_url: str | None,
     total_capacity: int,
     price: float,
     event_date: datetime,
@@ -58,7 +59,7 @@ async def create_event(
     sale_end: datetime,
     currency: str = "ARS",
 ) -> dict:
-    
+
     if total_capacity <= 0:
         raise InvalidEventDataError(
             f"La capacidad total debe ser mayor a 0, se recibió: {total_capacity}"
@@ -70,36 +71,36 @@ async def create_event(
             f"El precio no puede ser negativo, se recibió: {price}"
         )
 
-  
+
     if sale_start >= sale_end:
         raise InvalidEventDataError(
             f"La fecha de inicio de venta ({sale_start}) debe ser anterior "
             f"a la fecha de fin de venta ({sale_end})"
         )
 
-   
+
     if event_date <= sale_end:
         raise InvalidEventDataError(
             f"La fecha del evento ({event_date}) debe ser posterior "
             f"al cierre de ventas ({sale_end})"
         )
 
-   
+
     event_data = {
         "name": name,
         "description": description,
         "image_url": image_url,
         "total_capacity": total_capacity,
-        "remaining_capacity": total_capacity,   
+        "remaining_capacity": total_capacity,
         "price": price,
         "currency": currency,
         "event_date": event_date,
         "sale_start": sale_start,
         "sale_end": sale_end,
-        "status": "draft",  
+        "status": "draft",
     }
 
-  
+
     event = await event_repository.create_event(db, event_data)
 
 
@@ -126,7 +127,6 @@ async def activate_event(db: AsyncSession, event_id: str) -> dict:
             f"Solo eventos en estado 'draft' pueden ser activados."
         )
 
-    previous_status = event.status
 
     updated = await event_repository.update_event_status(db, event_id, "active")
     if not updated:
@@ -145,12 +145,12 @@ async def activate_event(db: AsyncSession, event_id: str) -> dict:
 
 
 async def mark_sold_out(db: AsyncSession, event_id: str) -> dict:
-    
+
     event = await event_repository.get_event_by_id(db, event_id)
     if event is None:
         raise EventNotFoundError(f"Evento {event_id} no encontrado")
 
-   
+
     if event.status != "active":
         raise InvalidEventStatusError(
             f"No se puede marcar como sold_out el evento {event_id} "
@@ -158,7 +158,6 @@ async def mark_sold_out(db: AsyncSession, event_id: str) -> dict:
             f"Solo eventos en estado 'active' pueden agotarse."
         )
 
-    previous_status = event.status
 
     updated = await event_repository.update_event_status(db, event_id, "sold_out")
     if not updated:
@@ -178,7 +177,7 @@ async def mark_sold_out(db: AsyncSession, event_id: str) -> dict:
 
 
 async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
-    
+
     event = await event_repository.get_event_by_id(db, event_id)
     if event is None:
         raise EventNotFoundError(f"Evento {event_id} no encontrado")
@@ -210,9 +209,9 @@ def _event_to_dict(event) -> dict:
         "image_url": event.image_url,
         "total_capacity": event.total_capacity,
         "remaining_capacity": event.remaining_capacity,
-        "price": float(event.price),          
+        "price": float(event.price),
         "currency": event.currency,
-        "event_date": str(event.event_date),   
+        "event_date": str(event.event_date),
         "sale_start": str(event.sale_start),
         "sale_end": str(event.sale_end),
         "status": event.status,

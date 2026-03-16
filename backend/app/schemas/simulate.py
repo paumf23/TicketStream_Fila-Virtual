@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+
 class SimulateLoadRequest(BaseModel):
     event_id: str = Field(
         ...,

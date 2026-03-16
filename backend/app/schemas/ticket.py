@@ -1,5 +1,6 @@
-from typing import Optional
+
 from pydantic import BaseModel, Field
+
 
 class PurchaseRequest(BaseModel):
     user_id: str = Field(
@@ -46,7 +47,7 @@ class PurchaseRequest(BaseModel):
         description="Método de pago",
         examples=["credit_card", "mercadopago"],
     )
-    card_number: Optional[str] = Field(
+    card_number: str | None = Field(
         None,
         description="Número de tarjeta ficticio (para simulación)",
         examples=["4500 0000 0000 0001"],

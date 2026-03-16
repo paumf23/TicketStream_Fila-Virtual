@@ -1,0 +1,30 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Cache de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Tests (no necesarios en producción)
+tests/
+
+# Herramientas de desarrollo
+.git/
+.gitignore
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# Archivos de entorno
+.env
+.env.*
+
+# Documentación local
+*.md
