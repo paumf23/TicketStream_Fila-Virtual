@@ -7,6 +7,9 @@ class EventResponse(BaseModel):
     name: str
     description: str | None = None
     image_url: str | None = None
+    category: str | None = None
+    rating: float | None = None
+    rating_label: str | None = None
     total_capacity: int
     remaining_capacity: int
     price: float
@@ -29,6 +32,9 @@ class EventStatsData(BaseModel):
     remaining_capacity: int
     occupancy_percentage: float
     queue_length: int
+    revenue: float
+    avg_wait_time_seconds: float | None = None
+    peak_queue_length: int
 
 
 class EventStatsResponse(EventResponse):

@@ -1,0 +1,149 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--color-text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.empty {
+  text-align: center;
+  padding: 64px 0;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+}
+
+.error {
+  text-align: center;
+  padding: 64px 0;
+  color: var(--color-danger);
+  font-size: 1.1rem;
+}
+
+.emptyContainer {
+  text-align: center;
+  padding: 64px 0;
+}
+
+.resetButton {
+  display: inline-block;
+  margin-top: 24px;
+  padding: 12px 32px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: white;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.resetButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.paymentSection {
+  margin-top: 60px;
+  padding-bottom: 40px;
+}
+
+.paymentCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.paymentHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.paymentIcon {
+  font-size: 1.4rem;
+}
+
+.paymentTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.paymentText {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+
+.paymentText strong {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.paymentLogos {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 30px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.brandLogo {
+  height: 30px;
+  max-width: 60px;
+  object-fit: contain;
+  opacity: 0.8;
+  filter: grayscale(1) brightness(2);
+  transition: all 0.3s;
+  background: transparent;
+}
+
+.brandLogoWide {
+  height: 25px;
+  max-width: 100px;
+  object-fit: contain;
+  opacity: 0.8;
+  filter: grayscale(1) brightness(2);
+  transition: all 0.3s;
+  background: transparent;
+}
+
+.brandLogo:hover, .brandLogoWide:hover {
+  opacity: 1;
+  filter: grayscale(0) brightness(1);
+}
+
+@media (max-width: 768px) {
+  .paymentLogos {
+    justify-content: center;
+    gap: 20px;
+  }
+}

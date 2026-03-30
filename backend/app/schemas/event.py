@@ -21,6 +21,12 @@ class CreateEventRequest(BaseModel):
         description="URL de la imagen del evento (para las cards del frontend)",
         examples=["https://ejemplo.com/images/lollapalooza-2026.jpg"],
     )
+    category: str | None = Field(
+        default=None,
+        max_length=50,
+        description="Categoría del evento (Música, Teatro, Deportes, Especiales)",
+        examples=["Música"],
+    )
     total_capacity: int = Field(
         ...,
         gt=0,

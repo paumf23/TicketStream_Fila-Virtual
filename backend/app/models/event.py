@@ -23,6 +23,9 @@ class Event(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    rating: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
+    rating_label: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     total_capacity: Mapped[int] = mapped_column(Integer)
 

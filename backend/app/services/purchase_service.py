@@ -102,18 +102,23 @@ async def initiate_purchase(
 
     await db.commit()
 
+    # Registrar la salida de la cola (cleanup, no crítico)
+    try:
+        active_record = await queue_history_repository.get_active_record(
+            db, user_id, event_id
+        )
+        if active_record is not None:
+            await queue_history_repository.record_exit(
+                db, active_record.id, exit_reason="purchased"
+            )
+            await db.commit()
+    except Exception as e:
+        logger.warning(f"No se pudo registrar la salida de cola para {user_id}: {e}")
+
+    # Remover la clave allowed AL FINAL (después de que todo lo demás terminó)
     await redis_repository.remove_allowed(event_id, user_id)
 
-    active_record = await queue_history_repository.get_active_record(
-        db, user_id, event_id
-    )
-    if active_record is not None:
-        await queue_history_repository.record_exit(
-            db, active_record.id, exit_reason="purchased"
-        )
-
     logger.info(f"Compra finalizada con éxito: Ticket {ticket.id} para usuario {user_id}")
-
 
     await db.refresh(ticket)
 

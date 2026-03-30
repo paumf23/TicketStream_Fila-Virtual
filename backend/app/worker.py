@@ -73,6 +73,7 @@ async def run_worker():
             async with AsyncSessionLocal() as db:
 
                 active_events = await event_repository.get_active_events(db)
+                await db.commit()
 
                 total_processed = 0
 

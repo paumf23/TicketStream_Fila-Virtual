@@ -20,7 +20,24 @@ def _channel_key(event_id: str) -> str:
 
 async def queue_push(event_id: str, user_id: str) -> int:
     position = await redis_pool.rpush(_queue_key(event_id), user_id)
+    await _update_peak_queue_length(event_id, position)
     return position
+
+
+def _peak_queue_key(event_id: str) -> str:
+    return f"peak_queue:{event_id}"
+
+
+async def _update_peak_queue_length(event_id: str, current_length: int) -> None:
+    key = _peak_queue_key(event_id)
+    current_peak = await redis_pool.get(key)
+    if current_peak is None or current_length > int(current_peak):
+        await redis_pool.set(key, str(current_length))
+
+
+async def get_peak_queue_length(event_id: str) -> int:
+    result = await redis_pool.get(_peak_queue_key(event_id))
+    return int(result) if result is not None else 0
 
 
 async def queue_pop(event_id: str, batch_size: int = 10) -> list[str]:

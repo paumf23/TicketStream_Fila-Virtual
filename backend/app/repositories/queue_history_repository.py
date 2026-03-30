@@ -86,3 +86,15 @@ async def get_active_record(
         .where(QueueHistory.exited_at.is_(None))
     )
     return result.scalar_one_or_none()
+
+
+async def get_avg_wait_time(db: AsyncSession, event_id: str) -> float | None:
+    from sqlalchemy import func as sa_func
+
+    result = await db.execute(
+        select(sa_func.avg(QueueHistory.wait_time_seconds))
+        .where(QueueHistory.event_id == event_id)
+        .where(QueueHistory.wait_time_seconds.is_not(None))
+    )
+    avg = result.scalar_one_or_none()
+    return round(float(avg), 1) if avg is not None else None

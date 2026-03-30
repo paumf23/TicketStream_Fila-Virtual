@@ -53,37 +53,113 @@ EXIT_REASONS = ["purchased", "expired", "abandoned", "disconnected"]
 
 SEED_EVENTS = [
     {
+        "name": "Coldplay - Music of the Spheres",
+        "description": "Chris Martin y compañía regresan para iluminar el Estadio River Plate con una propuesta sustentable e inmersiva. 'Music of the Spheres World Tour' no es solo un concierto, es una celebración de la vida y el planeta. Con pulseras LED que cambian de color al ritmo de la música, fuegos artificiales y una energía inigualable, disfrutarás de clásicos como 'Yellow', 'Viva la Vida' y 'Fix You', junto a los nuevos hits espaciales de la banda. Sé parte del fenómeno que batió récords de asistencia y viví una noche llena de magia, luces y mensajes de paz y amor.",
+        "image_url": "http://localhost:3000/images/events/coldplay.jpg",
+        "total_capacity": 65000,
+        "price": 105000.00,
+        "currency": "ARS",
+        "status": "active",
+        "category": "Música",
+        "rating": 9.8,
+        "rating_label": "EXPERIENCIA ÚNICA"
+    },
+    {
+        "name": "Superclásico: River Plate vs Boca Juniors",
+        "description": "El evento deportivo más intenso de la región se juega en el Estadio Monumental. Mucho más que un partido de fútbol, el Superclásico es una batalla de orgullo, pasión y herencia. Viví la adrenalina de las tribunas colmadas, el color de los recibimientos y el duelo táctico entre los dos gigantes del fútbol argentino por el Torneo Liga Profesional 2026. Asegurá tu lugar en la historia y presenciá un encuentro que paraliza al país y atrae la mirada de todo el mundo. ¡Sentí el rugir del Monumental en cada jugada!",
+        "image_url": "http://localhost:3000/images/events/river_boca.png",
+        "total_capacity": 72000,
+        "price": 70000.00,
+        "currency": "ARS",
+        "status": "active",
+        "category": "Deportes",
+        "rating": 9.5,
+        "rating_label": "PASIÓN PURA"
+    },
+    {
         "name": "Lollapalooza Argentina 2026",
-        "description": "Festival de música internacional con artistas de todo el mundo. 3 días de shows en vivo.",
+        "description": "El festival más importante de Argentina regresa al Hipódromo de San Isidro para tres jornadas inolvidables. Con más de 100 artistas distribuidos en múltiples escenarios, Kidzapalooza, una propuesta gastronómica de primer nivel y espacios de arte inmersivo, el Lolla es mucho más que música; es un estilo de vida. Vení a disfrutar de tus bandas favoritas bajo el sol y a descubrir los nuevos talentos que están marcando tendencia en todo el mundo. ¡Tres días de pura vibra festivalera te esperan!",
         "image_url": "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800",
         "total_capacity": 5000,
-        "price": 45000.00,
+        "price": 110000.00,
         "currency": "ARS",
+        "status": "active",
+        "category": "Música",
+        "rating": 9.2,
+        "rating_label": "FESTIVAL DEL AÑO"
     },
     {
-        "name": "River Plate vs Boca Juniors - Superclásico",
-        "description": "El superclásico del fútbol argentino en el Monumental. Torneo Liga Profesional 2026.",
-        "image_url": "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=800",
-        "total_capacity": 72000,
-        "price": 25000.00,
+        "name": "Experiencia Queen - Greatest Hits",
+        "description": "EXPERIENCIA QUEEN llega con su espectacular Greatest Hits Tour 2026. El show promete llevar al público a revivir los grandes éxitos de Queen en una única noche, transportándolos a los icónicos conciertos de la banda de manera fiel y deslumbrante.\n\nEste espectáculo, que recrea a la perfección tanto la música como la escenografía de los conciertos de Queen, representan con notable exactitud a cada uno de los miembros originales del grupo. Con vestuarios auténticos y el uso de instrumentos originales, el espectáculo ofrece una experiencia única para los fanáticos de todas las edades.\n\nEl repertorio incluye himnos inolvidables como “Bohemian Rhapsody”, “Love of My Life”, “Somebody to Love”, “Radio Ga Ga”, “I Want to Break Free” y “We Are the Champions”, entre otros, haciendo de cada función una verdadera fiesta de emociones. EXPERIENCIA QUEEN se convierte en una opción ideal para disfrutar en familia de la música de una de las bandas más legendarias de todos los tiempos.",
+        "image_url": "https://prod-cms-static.ticketek.com.ar/sites/default/files/images/show-header/960x400-queen.png",
+        "total_capacity": 5000,
+        "price": 95000.00,
         "currency": "ARS",
+        "status": "active",
+        "category": "Música",
+        "rating": 9.7,
+        "rating_label": "TRIBUTO LEGENDARIO"
     },
     {
-        "name": "Coldplay - Music of the Spheres Tour",
-        "description": "La banda británica vuelve a Buenos Aires con su gira mundial. Estadio River Plate.",
-        "image_url": "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800",
-        "total_capacity": 65000,
-        "price": 55000.00,
+        "name": "No me acuerdo las cosas",
+        "description": "Olvidarse todo, envejecer y otros síntomas de la edad. Una obra teatral que explora la memoria y los vínculos familiares con humor y melancolía. Protagonizada por un elenco estelar, esta pieza invita a reflexionar sobre lo que elegimos recordar y lo que el tiempo intenta borrar.\n\nUna comedia dramática de Julieta Otero con dirección de Dalia Gutmann que ha conquistado a la crítica y al público por su honestidad y calidez. Perfecta para quienes buscan una historia profunda que hable sobre la vida cotidiana con una sonrisa.",
+        "image_url": "http://localhost:3000/images/events/no_me_acuerdo.jpg",
+        "total_capacity": 300,
+        "price": 48000.00,
         "currency": "ARS",
+        "status": "active",
+        "category": "Teatro",
+        "rating": 8.9,
+        "rating_label": "CONMOVEDORA"
     },
     {
         "name": "Comic Con Argentina 2026",
-        "description": "Convención de comics, anime, gaming y cultura pop. Paneles, cosplay y stands.",
+        "description": "La convención de cultura pop más grande del continente regresa más grande que nunca. Comic Con Argentina 2026 te trae paneles exclusivos con invitados internacionales del cine y la televisión, stands de cómics únicos, coleccionables de edición limitada, un área de gaming masiva y el mejor concurso de cosplay de la región. Sumergite en un paraíso para los fanáticos donde cada rincón ofrece una nueva sorpresa sobre tus universos favoritos de Marvel, DC, Star Wars, Anime y mucho más. ¡Viví tu pasión al máximo!",
         "image_url": "https://images.unsplash.com/photo-1608889175123-8ee362201f81?w=800",
         "total_capacity": 15000,
-        "price": 12000.00,
+        "price": 105000.00,
         "currency": "ARS",
+        "status": "active",
+        "category": "Especiales",
+        "rating": 9.0,
+        "rating_label": "EL PARAÍSO GEEK"
     },
+    {
+        "name": "Cirque du Soleil: Kurios",
+        "description": "Adéntrate en el 'Gabinete de Curiosidades' de un inventor ambicioso que desafía las leyes del tiempo y el espacio. Kurios es una de las producciones más aclamadas del Cirque du Soleil, donde lo invisible cobra vida y la realidad se reinventa a través de acrobacias imposibles, música envolvente y un despliegue visual steampunk asombroso. Una experiencia inmersiva que te transportará a un mundo donde todo es posible si te atreves a mirar más allá. ¡Bienvenido al universo Kurios!",
+        "image_url": "http://localhost:3000/images/events/cirque_kurios.jpg",
+        "total_capacity": 45000,
+        "price": 100000.00,
+        "currency": "ARS",
+        "status": "active",
+        "category": "Especiales",
+        "rating": 9.8,
+        "rating_label": "MAGIA TOTAL"
+    },
+    {
+        "name": "Por el placer de volver a verla",
+        "description": "Por el placer de volver a verla sigue a un prestigioso autor y director teatral (Miguel Ángel Solá) que decide emprender un viaje emocional hacia su pasado para encontrar respuestas esenciales sobre su vida. Como un \"arqueólogo de la memoria\", el protagonista se despoja de lo superficial frente al público para reconstruir su historia personal y artística a través del reencuentro con la figura de una mujer única e irrepetible (Mercedes Funes), quien guarda las claves de su identidad.",
+        "image_url": "http://localhost:3000/images/events/placer_volver.png",
+        "total_capacity": 500,
+        "price": 52000.00,
+        "currency": "ARS",
+        "status": "active",
+        "category": "Teatro",
+        "rating": 10.0,
+        "rating_label": "EXCELENTE"
+    },
+    {
+        "name": "El Lago de los Cisnes",
+        "description": "La inmortal obra maestra de Tchaikovsky, El Lago de los Cisnes, cobra una nueva y vibrante vida de la mano de la compañía de Ballet sobre Hielo de Moscú. Esta versión única transforma el drama clásico de amor y tragedia en un espectáculo donde la elegancia del ballet ruso se fusiona con la destreza técnica del patinaje artístico.\n\nA través de una coreografía que adapta el lenguaje tradicional a la fluidez del hielo, un elenco de patinadores y bailarines de élite reinterpreta esta historia legendaria. El resultado es una puesta en escena emocionante que mantiene la esencia del clásico original mientras explora las posibilidades estéticas y la velocidad propias de la disciplina sobre patines.",
+        "image_url": "http://localhost:3000/images/events/lago_cisnes.png",
+        "total_capacity": 1200,
+        "price": 50000.00,
+        "currency": "ARS",
+        "status": "active",
+        "category": "Teatro",
+        "rating": 9.8,
+        "rating_label": "IMPERDIBLE"
+    }
 ]
 
 
@@ -114,13 +190,16 @@ async def seed_database():
         await conn.run_sync(Base.metadata.create_all)
 
     async with AsyncSessionLocal() as db:
-        # Verificar si ya hay datos
-        from sqlalchemy import func, select
-        result = await db.execute(select(func.count()).select_from(Event))
-        count = result.scalar()
-        if count > 0:
-            print("⚠️  La base de datos ya tiene datos. Seed cancelado.")
-            return
+        print("🧹 Limpiando base de datos...")
+        from sqlalchemy import text
+        await db.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
+        await db.execute(text("TRUNCATE TABLE payments;"))
+        await db.execute(text("TRUNCATE TABLE tickets;"))
+        await db.execute(text("TRUNCATE TABLE queue_history;"))
+        await db.execute(text("TRUNCATE TABLE buyers;"))
+        await db.execute(text("TRUNCATE TABLE events;"))
+        await db.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
+        await db.commit()
 
         print("🌱 Sembrando datos iniciales...")
 
@@ -141,7 +220,10 @@ async def seed_database():
                 event_date=now + timedelta(days=30 + i * 15),
                 sale_start=now - timedelta(days=7),
                 sale_end=now + timedelta(days=25 + i * 15),
-                status="active",
+                status=event_data.get("status", "active"),
+                category=event_data.get("category"),
+                rating=event_data.get("rating"),
+                rating_label=event_data.get("rating_label"),
             )
             db.add(event)
             events.append(event)

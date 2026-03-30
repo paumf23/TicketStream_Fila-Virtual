@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import BadRequestError, ConflictError, NotFoundError, ValidationError
-from app.repositories import event_repository, redis_repository
+from app.repositories import event_repository, queue_history_repository, redis_repository
 
 
 class EventNotFoundError(NotFoundError):
@@ -58,6 +58,7 @@ async def create_event(
     sale_start: datetime,
     sale_end: datetime,
     currency: str = "ARS",
+    category: str | None = None,
 ) -> dict:
 
     if total_capacity <= 0:
@@ -98,12 +99,12 @@ async def create_event(
         "sale_start": sale_start,
         "sale_end": sale_end,
         "status": "draft",
+        "category": category,
     }
 
 
     event = await event_repository.create_event(db, event_data)
-
-
+    await db.commit()
 
     return _event_to_dict(event)
 
@@ -138,6 +139,7 @@ async def activate_event(db: AsyncSession, event_id: str) -> dict:
 
 
     updated_event = await event_repository.get_event_by_id(db, event_id)
+    await db.commit()
     return _event_to_dict(updated_event)
 
 
@@ -173,6 +175,7 @@ async def mark_sold_out(db: AsyncSession, event_id: str) -> dict:
 
 
     updated_event = await event_repository.get_event_by_id(db, event_id)
+    await db.commit()
     return _event_to_dict(updated_event)
 
 
@@ -183,8 +186,11 @@ async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
         raise EventNotFoundError(f"Evento {event_id} no encontrado")
 
     queue_length = await redis_repository.queue_length(event_id)
+    peak_queue = await redis_repository.get_peak_queue_length(event_id)
+    avg_wait = await queue_history_repository.get_avg_wait_time(db, event_id)
 
     tickets_sold = event.total_capacity - event.remaining_capacity
+    revenue = float(event.price) * tickets_sold
 
     occupancy_percentage = round(
         (tickets_sold / max(1, event.total_capacity)) * 100, 2
@@ -196,6 +202,9 @@ async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
         "remaining_capacity": event.remaining_capacity,
         "occupancy_percentage": occupancy_percentage,
         "queue_length": queue_length,
+        "revenue": revenue,
+        "avg_wait_time_seconds": avg_wait,
+        "peak_queue_length": peak_queue,
     }
     return result
 
@@ -215,6 +224,9 @@ def _event_to_dict(event) -> dict:
         "sale_start": str(event.sale_start),
         "sale_end": str(event.sale_end),
         "status": event.status,
+        "category": event.category,
+        "rating": float(event.rating) if event.rating else None,
+        "rating_label": event.rating_label,
         "created_at": str(event.created_at),
         "updated_at": str(event.updated_at),
     }

@@ -62,6 +62,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    volumes:
+      - ./backend:/app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -86,6 +88,8 @@ services:
     depends_on:
       api:
         condition: service_started
+    volumes:
+      - ./backend:/app
     networks:
       - vq_network
 

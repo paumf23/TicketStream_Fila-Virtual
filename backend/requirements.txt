@@ -11,6 +11,7 @@ uvicorn[standard]==0.34.0
 # --- Base de Datos (MySQL async) ---
 sqlalchemy[asyncio]==2.0.36
 asyncmy==0.2.9
+cryptography==44.0.0
 
 # --- Redis (async con parser rápido) ---
 redis[hiredis]==5.2.1
