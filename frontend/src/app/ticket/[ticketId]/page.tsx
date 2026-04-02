@@ -96,8 +96,17 @@ export default function TicketPage() {
             <div className={styles.detailRow}>
               <span className={styles.detailLabel}>Método de pago</span>
               <span className={styles.detailValue}>
-                {ticket.payment_method === "credit_card" ? "Tarjeta de crédito" :
-                 ticket.payment_method === "debit_card" ? "Tarjeta de débito" : "Efectivo"}
+                {ticket.payment_method === "card" ? "Tarjeta de Crédito/Débito" :
+                 ticket.payment_method === "wallet" ? "Billetera Virtual" :
+                 ticket.payment_method}
+                {ticket.payment_provider && ` (${
+                  ticket.payment_provider === "visa" ? "Visa" :
+                  ticket.payment_provider === "amex" ? "American Express" :
+                  ticket.payment_provider === "mastercard" ? "Master Card" :
+                  ticket.payment_provider === "modo" ? "MODO" :
+                  ticket.payment_provider === "mercadopago" ? "Mercado Pago" :
+                  ticket.payment_provider
+                })`}
               </span>
             </div>
           )}

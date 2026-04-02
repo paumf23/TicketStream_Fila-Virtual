@@ -104,6 +104,7 @@ export interface TicketDetailResponse {
   status: string;
   payment_reference: string | null;
   payment_method: string | null;
+  payment_provider: string | null;
   purchased_at: string;
   confirmed_at: string | null;
 }

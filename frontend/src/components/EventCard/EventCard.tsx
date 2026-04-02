@@ -50,22 +50,6 @@ export default function EventCard({ event }: EventCardProps) {
       </div>
 
       <div className={styles.content}>
-        <div className={styles.ratingInfo}>
-          <span className={styles.ratingValue}>{event.rating || "N/A"}</span>
-          {event.rating && (
-            <div className={styles.stars}>
-              {[...Array(5)].map((_, i) => (
-                <span 
-                  key={i} 
-                  className={i < Math.round((event.rating || 0) / 2) ? styles.starFilled : styles.starEmpty}
-                >
-                  ★
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
         {event.description && (
           <p className={styles.description}>{event.description}</p>
         )}

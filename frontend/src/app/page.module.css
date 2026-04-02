@@ -117,28 +117,14 @@
 }
 
 .brandLogo {
-  height: 30px;
-  max-width: 60px;
+  height: 45px;
   object-fit: contain;
-  opacity: 0.8;
-  filter: grayscale(1) brightness(2);
   transition: all 0.3s;
   background: transparent;
 }
 
-.brandLogoWide {
-  height: 25px;
-  max-width: 100px;
-  object-fit: contain;
-  opacity: 0.8;
-  filter: grayscale(1) brightness(2);
-  transition: all 0.3s;
-  background: transparent;
-}
-
-.brandLogo:hover, .brandLogoWide:hover {
-  opacity: 1;
-  filter: grayscale(0) brightness(1);
+.brandLogo:hover {
+  transform: scale(1.05);
 }
 
 @media (max-width: 768px) {

@@ -17,6 +17,7 @@ async def create_payment(
     ticket_id: str,
     amount: float,
     payment_method: str,
+    payment_provider: str | None = None,
     status: str = "completed",
 ) -> Payment:
 
@@ -25,6 +26,7 @@ async def create_payment(
         ticket_id=ticket_id,
         amount=amount,
         payment_method=payment_method,
+        payment_provider=payment_provider,
         status=status,
         payment_reference=_generate_payment_reference(),
     )

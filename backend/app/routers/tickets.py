@@ -25,6 +25,7 @@ async def purchase_ticket(
         dni=body.dni,
         email=body.email,
         payment_method=body.payment_method,
+        payment_provider=body.payment_provider,
         quantity=body.quantity,
     )
 

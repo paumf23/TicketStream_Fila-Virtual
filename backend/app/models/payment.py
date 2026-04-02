@@ -25,9 +25,13 @@ class Payment(Base):
 
     payment_method: Mapped[str] = mapped_column(
         SAEnum(
-            "credit_card", "debit_card", "mercado_pago",
+            "card", "wallet",
             name="payment_method"
         ),
+    )
+
+    payment_provider: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
     )
 
     status: Mapped[str] = mapped_column(

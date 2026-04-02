@@ -44,7 +44,11 @@ EMAIL_DOMAINS = [
     "outlook.com", "live.com.ar",
 ]
 
-PAYMENT_METHODS = ["credit_card", "debit_card", "mercado_pago"]
+PAYMENT_METHODS = ["card", "wallet"]
+PAYMENT_PROVIDERS = {
+    "card": ["visa", "mastercard", "amex"],
+    "wallet": ["mercadopago", "modo"]
+}
 
 EXIT_REASONS = ["purchased", "expired", "abandoned", "disconnected"]
 
@@ -53,16 +57,17 @@ EXIT_REASONS = ["purchased", "expired", "abandoned", "disconnected"]
 
 SEED_EVENTS = [
     {
-        "name": "Coldplay - Music of the Spheres",
-        "description": "Chris Martin y compañía regresan para iluminar el Estadio River Plate con una propuesta sustentable e inmersiva. 'Music of the Spheres World Tour' no es solo un concierto, es una celebración de la vida y el planeta. Con pulseras LED que cambian de color al ritmo de la música, fuegos artificiales y una energía inigualable, disfrutarás de clásicos como 'Yellow', 'Viva la Vida' y 'Fix You', junto a los nuevos hits espaciales de la banda. Sé parte del fenómeno que batió récords de asistencia y viví una noche llena de magia, luces y mensajes de paz y amor.",
-        "image_url": "http://localhost:3000/images/events/coldplay.jpg",
-        "total_capacity": 65000,
-        "price": 105000.00,
+        "name": "Turismo Carretera: Gran Premio RUS Agro — Rafaela",
+        "description": "El Autódromo de Rafaela, el 'Templo de la Velocidad', recibe al Turismo Carretera para una de las fechas más esperadas del calendario. Viví la adrenalina de los motores a más de 250 km/h en el óvalo más rápido de Sudamérica. Sentí el rugir de los Ford, Chevrolet, Dodge y Torino mientras los mejores pilotos del país se baten a duelo en las chicanas. Una experiencia única para los amantes de los fierros, con un ambiente de fiesta en las tribunas y toda la pasión del automovilismo nacional. ¡No te pierdas el Gran Premio RUS Agro en la mítica Rafaela!",
+        "image_url": "http://localhost:3000/images/events/tc_rafaela.png",
+        "total_capacity": 45000,
+        "price": 35000.00,
         "currency": "ARS",
         "status": "active",
-        "category": "Música",
-        "rating": 9.8,
-        "rating_label": "EXPERIENCIA ÚNICA"
+        "category": "Deportes",
+        "rating": 9.4,
+        "rating_label": "VELOCIDAD PURA",
+        "event_date": "2026-06-19"
     },
     {
         "name": "Superclásico: River Plate vs Boca Juniors",
@@ -79,7 +84,7 @@ SEED_EVENTS = [
     {
         "name": "Lollapalooza Argentina 2026",
         "description": "El festival más importante de Argentina regresa al Hipódromo de San Isidro para tres jornadas inolvidables. Con más de 100 artistas distribuidos en múltiples escenarios, Kidzapalooza, una propuesta gastronómica de primer nivel y espacios de arte inmersivo, el Lolla es mucho más que música; es un estilo de vida. Vení a disfrutar de tus bandas favoritas bajo el sol y a descubrir los nuevos talentos que están marcando tendencia en todo el mundo. ¡Tres días de pura vibra festivalera te esperan!",
-        "image_url": "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800",
+        "image_url": "http://localhost:3000/images/events/lollapalooza.jpeg",
         "total_capacity": 5000,
         "price": 110000.00,
         "currency": "ARS",
@@ -91,7 +96,7 @@ SEED_EVENTS = [
     {
         "name": "Experiencia Queen - Greatest Hits",
         "description": "EXPERIENCIA QUEEN llega con su espectacular Greatest Hits Tour 2026. El show promete llevar al público a revivir los grandes éxitos de Queen en una única noche, transportándolos a los icónicos conciertos de la banda de manera fiel y deslumbrante.\n\nEste espectáculo, que recrea a la perfección tanto la música como la escenografía de los conciertos de Queen, representan con notable exactitud a cada uno de los miembros originales del grupo. Con vestuarios auténticos y el uso de instrumentos originales, el espectáculo ofrece una experiencia única para los fanáticos de todas las edades.\n\nEl repertorio incluye himnos inolvidables como “Bohemian Rhapsody”, “Love of My Life”, “Somebody to Love”, “Radio Ga Ga”, “I Want to Break Free” y “We Are the Champions”, entre otros, haciendo de cada función una verdadera fiesta de emociones. EXPERIENCIA QUEEN se convierte en una opción ideal para disfrutar en familia de la música de una de las bandas más legendarias de todos los tiempos.",
-        "image_url": "https://prod-cms-static.ticketek.com.ar/sites/default/files/images/show-header/960x400-queen.png",
+        "image_url": "http://localhost:3000/images/events/queen.png",
         "total_capacity": 5000,
         "price": 95000.00,
         "currency": "ARS",
@@ -115,7 +120,8 @@ SEED_EVENTS = [
     {
         "name": "Comic Con Argentina 2026",
         "description": "La convención de cultura pop más grande del continente regresa más grande que nunca. Comic Con Argentina 2026 te trae paneles exclusivos con invitados internacionales del cine y la televisión, stands de cómics únicos, coleccionables de edición limitada, un área de gaming masiva y el mejor concurso de cosplay de la región. Sumergite en un paraíso para los fanáticos donde cada rincón ofrece una nueva sorpresa sobre tus universos favoritos de Marvel, DC, Star Wars, Anime y mucho más. ¡Viví tu pasión al máximo!",
-        "image_url": "https://images.unsplash.com/photo-1608889175123-8ee362201f81?w=800",
+        "image_url": "http://localhost:3000/images/events/comic_con.png",
+        "event_date": "2026-12-05",
         "total_capacity": 15000,
         "price": 105000.00,
         "currency": "ARS",
@@ -150,8 +156,8 @@ SEED_EVENTS = [
     },
     {
         "name": "El Lago de los Cisnes",
-        "description": "La inmortal obra maestra de Tchaikovsky, El Lago de los Cisnes, cobra una nueva y vibrante vida de la mano de la compañía de Ballet sobre Hielo de Moscú. Esta versión única transforma el drama clásico de amor y tragedia en un espectáculo donde la elegancia del ballet ruso se fusiona con la destreza técnica del patinaje artístico.\n\nA través de una coreografía que adapta el lenguaje tradicional a la fluidez del hielo, un elenco de patinadores y bailarines de élite reinterpreta esta historia legendaria. El resultado es una puesta en escena emocionante que mantiene la esencia del clásico original mientras explora las posibilidades estéticas y la velocidad propias de la disciplina sobre patines.",
-        "image_url": "http://localhost:3000/images/events/lago_cisnes.png",
+        "description": "La inmortal obra maestra de Tchaikovsky, El Lago de los Cisnes, cobra una nueva y vibrante vida de la mano de una compañía de ballet de primer nivel. Esta puesta en escena transforma el drama clásico de amor y tragedia en un espectáculo donde la elegancia, la técnica y la expresión corporal alcanzan su máximo esplendor.\n\nA través de una coreografía fiel al lenguaje del ballet clásico, un elenco de bailarines de élite reinterpreta esta historia legendaria con gracia y precisión. El resultado es una puesta en escena emocionante que mantiene la esencia del clásico original mientras deslumbra con vestuarios exquisitos, una iluminación envolvente y la magia atemporal de la danza.",
+        "image_url": "http://localhost:3000/images/events/lago_cisnes.jpeg",
         "total_capacity": 1200,
         "price": 50000.00,
         "currency": "ARS",
@@ -217,7 +223,7 @@ async def seed_database():
                 remaining_capacity=event_data["total_capacity"],
                 price=event_data["price"],
                 currency=event_data["currency"],
-                event_date=now + timedelta(days=30 + i * 15),
+                event_date=event_data.get("event_date") or (now + timedelta(days=30 + i * 15)),
                 sale_start=now - timedelta(days=7),
                 sale_end=now + timedelta(days=25 + i * 15),
                 status=event_data.get("status", "active"),
@@ -266,11 +272,15 @@ async def seed_database():
                 db.add(ticket)
                 await db.flush()
 
+                method = random.choice(PAYMENT_METHODS)
+                provider = random.choice(PAYMENT_PROVIDERS[method])
+
                 payment = Payment(
                     id=str(uuid4()),
                     ticket_id=ticket.id,
                     amount=float(event.price),
-                    payment_method=random.choice(PAYMENT_METHODS),
+                    payment_method=method,
+                    payment_provider=provider,
                     status="completed",
                     payment_reference=_generate_payment_reference(),
                 )

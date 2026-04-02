@@ -98,6 +98,7 @@ export const purchaseTicket = (data: {
   dni: string;
   email: string;
   payment_method: string;
+  payment_provider: string;
   quantity: number;
 }) =>
   request<PurchaseResponse>("/api/tickets/purchase", {

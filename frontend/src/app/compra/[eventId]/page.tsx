@@ -29,19 +29,21 @@ export default function PurchasePage() {
   const [lastName, setLastName] = useState("");
   const [dni, setDni] = useState("");
   const [email, setEmail] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("credit_card");
+  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [paymentProvider, setPaymentProvider] = useState("");
   const [quantity, setQuantity] = useState(1);
-
+ 
   // Validation
   const [dniError, setDniError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
-
+  const [providerError, setProviderError] = useState("");
+ 
   const lettersOnly = /^[a-zA-ZÀ-ÿ\s]*$/;
   const numbersOnly = /^[0-9]*$/;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+ 
   function handleFirstNameChange(value: string) {
     setFirstName(value);
     setFirstNameError(value && !lettersOnly.test(value) ? "Solo se permiten letras" : "");
@@ -58,9 +60,9 @@ export default function PurchasePage() {
     setEmail(value);
     setEmailError(value && !emailRegex.test(value) ? "Ingresá un email válido" : "");
   }
-
-  const hasValidationErrors = !!firstNameError || !!lastNameError || !!dniError || !!emailError;
-
+ 
+  const hasValidationErrors = !!firstNameError || !!lastNameError || !!dniError || !!emailError || !!providerError || !paymentProvider;
+ 
   // Cargar evento y datos guardados
   useEffect(() => {
     async function init() {
@@ -74,22 +76,32 @@ export default function PurchasePage() {
       }
     }
     init();
-
+ 
     // Prellenar nombre desde localStorage
     setFirstName(localStorage.getItem("vq_first_name") || "");
     setLastName(localStorage.getItem("vq_last_name") || "");
   }, [eventId]);
 
+  useEffect(() => {
+    setPaymentProvider("");
+    setProviderError("");
+  }, [paymentMethod]);
+ 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!event || hasValidationErrors) return;
 
+    if (!paymentProvider) {
+      setProviderError("Por favor seleccioná un medio de pago");
+      return;
+    }
+ 
     const userId = localStorage.getItem("vq_user_id");
     if (!userId) {
       alert("No se encontró tu identificación. Volvé al evento.");
       return;
     }
-
+ 
     setSubmitting(true);
     try {
       const result = await purchaseTicket({
@@ -100,6 +112,7 @@ export default function PurchasePage() {
         dni: dni.trim(),
         email: email.trim(),
         payment_method: paymentMethod,
+        payment_provider: paymentProvider,
         quantity,
       });
       // Redirigir a la confirmación del ticket
@@ -196,11 +209,42 @@ export default function PurchasePage() {
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
                 >
-                  <option value="credit_card">Tarjeta de crédito</option>
-                  <option value="debit_card">Tarjeta de débito</option>
-                  <option value="cash">Efectivo</option>
+                  <option value="card">Tarjeta de Crédito/Débito</option>
+                  <option value="wallet">Billetera Virtual</option>
                 </select>
               </div>
+
+              {/* Proveedor / Entidad */}
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>
+                  {paymentMethod === "card" ? "Seleccioná tu tarjeta" : "Seleccioná tu billetera"}
+                </label>
+                <select
+                  className={`${styles.select} ${providerError ? styles.inputError : ""}`}
+                  value={paymentProvider}
+                  onChange={(e) => {
+                    setPaymentProvider(e.target.value);
+                    setProviderError("");
+                  }}
+                  required
+                >
+                  <option value="" disabled>Elegí una opción</option>
+                  {paymentMethod === "card" ? (
+                    <>
+                      <option value="visa">Visa</option>
+                      <option value="mastercard">Master Card</option>
+                      <option value="amex">American Express</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="mercadopago">Mercado Pago</option>
+                      <option value="modo">MODO</option>
+                    </>
+                  )}
+                </select>
+                {providerError && <span className={styles.fieldError}>{providerError}</span>}
+              </div>
+
               <div className={styles.inputGroup}>
                 <label className={styles.label}>Cantidad de entradas</label>
                 <select

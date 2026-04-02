@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { getEvent, enterQueue, simulateLoad } from "@/lib/api";
 import type { Event } from "@/types";
 import styles from "./page.module.css";
@@ -147,7 +148,7 @@ export default function EventDetailPage() {
 
         <div className={styles.heroContent}>
           <div className={styles.header}>
-            <a href="/" className={styles.backLink}>← Volver</a>
+            <Link href="/" className={styles.backLink}>← Volver</Link>
           </div>
 
           <div className={styles.mainInfo}>

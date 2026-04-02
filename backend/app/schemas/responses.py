@@ -95,6 +95,7 @@ class TicketDetailResponse(BaseModel):
     status: str
     payment_reference: str | None = None
     payment_method: str | None = None
+    payment_provider: str | None = None
     purchased_at: str
     confirmed_at: str | None = None
 

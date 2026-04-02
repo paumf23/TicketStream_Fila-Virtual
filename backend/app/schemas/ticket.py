@@ -44,8 +44,13 @@ class PurchaseRequest(BaseModel):
     )
     payment_method: str = Field(
         ...,
-        description="Método de pago",
-        examples=["credit_card", "mercadopago"],
+        description="Método de pago (card, wallet)",
+        examples=["card", "wallet"],
+    )
+    payment_provider: str | None = Field(
+        None,
+        description="Entidad o proveedor del pago (Visa, AMEX, MODO, etc.)",
+        examples=["visa", "modo"],
     )
     card_number: str | None = Field(
         None,

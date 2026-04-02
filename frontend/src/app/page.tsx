@@ -61,11 +61,11 @@ export default async function HomePage({
                 Evitá iniciar un desconocimiento en tu Banco o Tarjeta: este tipo de gestiones puede generar bloqueos automáticos por actividad sospechosa y afectar futuras compras. Estamos para ayudarte y resolver cualquier inconveniente rápidamente.
               </p>
               <div className={styles.paymentLogos}>
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/Visa_2021.svg/320px-Visa_2021.svg.png" alt="Visa" className={styles.brandLogo} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_MODO.png/320px-Logo_MODO.png" alt="MODO" className={styles.brandLogoWide} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/American_Express_logo.svg/320px-American_Express_logo.svg.png" alt="AMEX" className={styles.brandLogo} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/320px-Mastercard-logo.svg.png" alt="Mastercard" className={styles.brandLogo} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Logo_Mercado_Pago.png/320px-Logo_Mercado_Pago.png" alt="Mercado Pago" className={styles.brandLogoWide} />
+                <img src="/images/payments/visa.png" alt="Visa" className={styles.brandLogo} />
+                <img src="/images/payments/Modo.png" alt="MODO" className={styles.brandLogo} />
+                <img src="/images/payments/Amex.png" alt="AMEX" className={styles.brandLogo} />
+                <img src="/images/payments/mastercard.png" alt="Mastercard" className={styles.brandLogo} />
+                <img src="/images/payments/mercadopago.png" alt="Mercado Pago" className={styles.brandLogo} />
               </div>
             </div>
           </section>

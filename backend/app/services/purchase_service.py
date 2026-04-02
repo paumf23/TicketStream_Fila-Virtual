@@ -44,6 +44,7 @@ async def initiate_purchase(
     dni: str,
     email: str,
     payment_method: str,
+    payment_provider: str | None = None,
     quantity: int = 1,
 ) -> dict:
     logger.info(f"Iniciando flujo de compra: Usuario {user_id} para evento {event_id} (Cantidad: {quantity})")
@@ -94,6 +95,7 @@ async def initiate_purchase(
             ticket_id=ticket.id,
             amount=total_price,
             payment_method=payment_method,
+            payment_provider=payment_provider,
         )
 
 
@@ -169,6 +171,7 @@ async def get_ticket_detail(
         "status": ticket.status,
         "payment_reference": payment.payment_reference if payment else None,
         "payment_method": payment.payment_method if payment else None,
+        "payment_provider": payment.payment_provider if payment else None,
         "purchased_at": str(ticket.purchased_at),
         "confirmed_at": str(ticket.confirmed_at) if ticket.confirmed_at else None,
     }
