@@ -35,6 +35,14 @@ class EventStatsData(BaseModel):
     revenue: float
     avg_wait_time_seconds: float | None = None
     peak_queue_length: int
+    abandoned_count: int = 0
+    processed_count: int = 0
+    throughput: int = 0
+    effort: float = 0.0
+    trend: int = 0
+    last_jump: int = 0
+    incoming_rate: int = 0
+    processed_rate: int = 0
 
 
 class EventStatsResponse(EventResponse):

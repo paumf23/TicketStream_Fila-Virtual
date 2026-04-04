@@ -120,3 +120,24 @@ export const simulateLoad = (eventId: string, numUsers: number) =>
     method: "POST",
     body: JSON.stringify({ event_id: eventId, num_users: numUsers }),
   });
+
+
+// POST /api/simulate/advanced → Simulación Pro (Mission Control)
+export const advancedSimulate = (data: {
+  event_id: string;
+  num_users: number;
+  include_me: boolean;
+  user_id?: string;
+  target_position?: number;
+  processing_speed: number;
+  abandon_rate: number;
+}) =>
+  request<{
+    status: string;
+    message: string;
+    target_position?: number;
+    config: { speed: number; abandon_rate: number };
+  }>("/api/simulate/advanced", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });

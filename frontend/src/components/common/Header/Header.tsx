@@ -44,6 +44,10 @@ export default function Header() {
             <Link href="/?category=Especiales" className={styles.dropdownItem}>Especiales</Link>
           </div>
         </div>
+
+        <Link href="/?simulation=true" className={styles.simulationLink}>
+          Personalizar Simulación
+        </Link>
       </nav>
     </header>
   );

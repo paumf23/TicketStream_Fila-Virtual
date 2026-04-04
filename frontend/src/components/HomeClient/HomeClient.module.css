@@ -1,0 +1,60 @@
+.hero {
+  text-align: center;
+  padding: 60px 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.exitButton {
+  display: inline-block;
+  margin-top: 24px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  transition: all 0.2s;
+}
+
+.exitButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 30px;
+  padding: 0 40px 80px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.emptyContainer {
+  text-align: center;
+  padding: 100px 20px;
+}
+
+.empty {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+}

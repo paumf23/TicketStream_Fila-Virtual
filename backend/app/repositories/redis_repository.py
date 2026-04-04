@@ -20,6 +20,7 @@ def _channel_key(event_id: str) -> str:
 
 async def queue_push(event_id: str, user_id: str) -> int:
     position = await redis_pool.rpush(_queue_key(event_id), user_id)
+    await increment_incoming_count(event_id, 1)
     await _update_peak_queue_length(event_id, position)
     return position
 
@@ -57,6 +58,23 @@ async def queue_position(event_id: str, user_id: str) -> int | None:
 
 async def queue_length(event_id: str) -> int:
     return await redis_pool.llen(_queue_key(event_id))
+
+
+async def remove_queue_entry(event_id: str, user_id: str) -> None:
+    key = f"event:{event_id}:queue"
+    await redis_pool.lrem(key, 0, user_id)
+
+# --- Gestión de Simulación (Redis-Only) ---
+
+async def add_active_simulation(event_id: str) -> None:
+    await redis_pool.sadd("sim:active_events", event_id)
+
+async def remove_active_simulation(event_id: str) -> None:
+    await redis_pool.srem("sim:active_events", event_id)
+
+async def get_active_simulations() -> list[str]:
+    events = await redis_pool.smembers("sim:active_events")
+    return [e.decode("utf-8") if isinstance(e, bytes) else e for e in events]
 
 
 async def queue_remove(event_id: str, user_id: str) -> bool:
@@ -118,3 +136,80 @@ async def get_user_name(user_id: str) -> dict | None:
         "last_name": data.get("last_name", ""),
     }
 
+
+def _event_config_key(event_id: str) -> str:
+    return f"event_config:{event_id}"
+
+
+async def set_event_config(
+    event_id: str, speed: int, abandon_rate: float
+) -> None:
+    key = _event_config_key(event_id)
+    # Guardamos en un hash para recuperarlo fácilmente
+    await redis_pool.hset(
+        key,
+        mapping={"speed": speed, "abandon_rate": abandon_rate}
+    )
+
+async def increment_abandoned_count(event_id: str, count: int = 1) -> None:
+    await redis_pool.incrby(f"event:{event_id}:abandoned", count)
+
+async def get_abandoned_count(event_id: str) -> int:
+    val = await redis_pool.get(f"event:{event_id}:abandoned")
+    return int(val) if val else 0
+
+
+async def increment_processed_count(event_id: str, count: int = 1) -> None:
+    await redis_pool.incrby(f"event:{event_id}:processed", count)
+
+
+async def get_processed_count(event_id: str) -> int:
+    val = await redis_pool.get(f"event:{event_id}:processed")
+    return int(val) if val else 0
+
+
+async def increment_incoming_count(event_id: str, count: int = 1) -> None:
+    await redis_pool.incrby(f"event:{event_id}:incoming", count)
+
+
+async def get_incoming_count(event_id: str) -> int:
+    val = await redis_pool.get(f"event:{event_id}:incoming")
+    return int(val) if val else 0
+
+
+async def reset_incoming_count(event_id: str) -> None:
+    await redis_pool.delete(f"event:{event_id}:incoming")
+
+
+async def get_event_config(event_id: str) -> dict:
+    key = _event_config_key(event_id)
+    data = await redis_pool.hgetall(key)
+    return {
+        "speed": int(data.get("speed", 60)) if data.get("speed") else 60,
+        "abandon_rate": float(data.get("abandon_rate", 0)) if data.get("abandon_rate") else 0.0,
+    }
+
+
+async def clear_queue(event_id: str) -> None:
+    await redis_pool.delete(_queue_key(event_id))
+    await redis_pool.delete(f"event:{event_id}:abandoned")
+    await redis_pool.delete(f"event:{event_id}:processed")
+    await redis_pool.delete(f"event:{event_id}:incoming")
+
+
+async def bulk_push(event_id: str, user_ids: list[str]) -> None:
+    if not user_ids:
+        return
+    
+    key = _queue_key(event_id)
+    async with redis_pool.pipeline(transaction=True) as pipe:
+        for i in range(0, len(user_ids), 100):
+            chunk = user_ids[i : i + 100]
+            pipe.rpush(key, *chunk)
+        pipe.llen(key)
+        results = await pipe.execute()
+        
+        # El último resultado es el tamaño total de la cola
+        new_length = results[-1]
+        await _update_peak_queue_length(event_id, new_length)
+    await increment_incoming_count(event_id, len(user_ids))

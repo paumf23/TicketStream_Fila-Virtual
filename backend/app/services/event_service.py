@@ -188,6 +188,22 @@ async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
     queue_length = await redis_repository.queue_length(event_id)
     peak_queue = await redis_repository.get_peak_queue_length(event_id)
     avg_wait = await queue_history_repository.get_avg_wait_time(db, event_id)
+    
+    abandoned_count = await redis_repository.get_abandoned_count(event_id)
+    processed_count = await redis_repository.get_processed_count(event_id)
+    # Recuperar métricas dinámicas de simulación desde el hash en Redis
+    last_stats = await redis_repository.redis_pool.hgetall(f"event:{event_id}:stats")
+    
+    effort = float(last_stats.get("effort", 0.0))
+    trend = int(last_stats.get("trend", 0))
+    last_jump = int(last_stats.get("last_jump", 0))
+    incoming_rate = int(last_stats.get("incoming_rate", 0))
+    processed_rate = int(last_stats.get("processed_rate", 0))
+    
+    # Flujo total de salida (throughput) es el last_jump (processed + abandoned) en el último tick
+    # Opcionalmente, promediado por minuto si last_stats.get("throughput") estuviera guardado.
+    # Por ahora usamos el valor que el worker ya calcula como saldo neto de salida.
+    throughput = last_jump
 
     tickets_sold = event.total_capacity - event.remaining_capacity
     revenue = float(event.price) * tickets_sold
@@ -205,6 +221,14 @@ async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
         "revenue": revenue,
         "avg_wait_time_seconds": avg_wait,
         "peak_queue_length": peak_queue,
+        "abandoned_count": abandoned_count,
+        "processed_count": processed_count,
+        "throughput": throughput,
+        "effort": effort,
+        "trend": trend,
+        "last_jump": last_jump,
+        "incoming_rate": incoming_rate,
+        "processed_rate": processed_rate
     }
     return result
 

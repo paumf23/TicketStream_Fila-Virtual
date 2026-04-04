@@ -19,116 +19,6 @@
   margin-bottom: 32px;
 }
 
-.card {
-  background-color: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: 40px 32px;
-  box-shadow: var(--shadow-card);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 28px;
-}
-
-.positionLabel {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-}
-
-.positionNumber {
-  font-size: 4rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  line-height: 1;
-}
-
-.progressSection {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.progressBar {
-  width: 100%;
-  height: 8px;
-  background-color: var(--color-surface-light);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-  border-radius: 4px;
-  transition: width 0.5s ease;
-}
-
-.progressText {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-}
-
-.infoGrid {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.infoItem {
-  background-color: var(--color-surface-light);
-  border-radius: var(--radius-sm);
-  padding: 14px;
-}
-
-.infoLabel {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-
-.infoValue {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.connectionStatus {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.dotConnected {
-  background-color: var(--color-success);
-  box-shadow: 0 0 6px var(--color-success);
-}
-
-.dotDisconnected {
-  background-color: var(--color-danger);
-}
-
-/* Animación de pulso para la posición */
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
 
 .waiting {
   animation: pulse 2s ease-in-out infinite;
@@ -136,217 +26,42 @@
   color: var(--color-text-muted);
 }
 
-/* Pantalla de "tu turno" */
-.turnCard {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  border-radius: var(--radius-lg);
-  padding: 48px 32px;
-  box-shadow: var(--shadow-glow);
+.actions {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  animation: turnGlow 2s ease-in-out infinite;
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+  margin: 20px auto 0;
 }
 
-@keyframes turnGlow {
-  0%, 100% {
-    box-shadow:
-      0 0 25px rgba(255, 255, 255, 0.25),
-      0 0 50px rgba(255, 255, 255, 0.15),
-      0 0 80px rgba(255, 255, 255, 0.08);
-  }
-  50% {
-    box-shadow:
-      0 0 40px rgba(255, 255, 255, 0.45),
-      0 0 80px rgba(255, 255, 255, 0.25),
-      0 0 120px rgba(255, 255, 255, 0.12),
-      0 0 160px rgba(255, 255, 255, 0.06);
-  }
-}
-
-.turnIcon {
-  font-size: 4rem;
-}
-
-.turnTitle {
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #fff;
-}
-
-.turnMessage {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.turnButton {
-  padding: 16px 48px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  font-family: var(--font-family);
-  color: var(--color-primary);
-  background-color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.turnButton:hover {
-  transform: translateY(-2px);
-}
-
-.turnTimer {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.regretButton {
-  padding: 12px 36px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  font-family: var(--font-family);
-  color: rgba(255, 255, 255, 0.7);
+.resetButton {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-text-muted);
+  padding: 14px;
   border-radius: var(--radius-md);
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.regretButton:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.5);
+.resetButton:hover {
   background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* Pantalla de tiempo expirado */
-.expiredCard {
-  background: linear-gradient(135deg, #2d1b3d, #1a1a2e);
-  border: 1px solid rgba(255, 107, 107, 0.3);
-  border-radius: var(--radius-lg);
-  padding: 48px 32px;
-  box-shadow: 0 0 20px rgba(255, 107, 107, 0.15);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  text-align: center;
-}
-
-.expiredTitle {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--color-danger);
-}
-
-.expiredMessage {
-  font-size: 1rem;
-  color: var(--color-text-muted);
-  max-width: 400px;
-  line-height: 1.5;
-}
-
-.expiredButton {
-  padding: 16px 48px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  font-family: var(--font-family);
-  color: #fff;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.expiredButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4);
+.simMode {
+  --color-primary: var(--color-simulation);
+  --color-secondary: #FF8F00;
+  --shadow-glow: var(--shadow-simulation);
 }
 
 .error {
   color: var(--color-danger);
   font-size: 1.1rem;
   padding: 64px 0;
-}
-
-/* Estadísticas del evento */
-.statsCard {
-  width: 100%;
-  background-color: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: 28px 32px;
-  box-shadow: var(--shadow-card);
-  margin-top: 24px;
-}
-
-.statsTitle {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.statsGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-}
-
-.statItem {
-  background-color: var(--color-surface-light);
-  border-radius: var(--radius-sm);
-  padding: 14px;
-  text-align: center;
-}
-
-.statValue {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--color-text);
-  margin-bottom: 4px;
-}
-
-.statValueHighlight {
-  color: var(--color-secondary);
-}
-
-.statLabel {
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-}
-
-.occupancyBar {
-  grid-column: 1 / -1;
-  background-color: var(--color-surface-light);
-  border-radius: var(--radius-sm);
-  padding: 14px;
-}
-
-.occupancyHeader {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.occupancyTrack {
-  width: 100%;
-  height: 10px;
-  background-color: var(--color-surface);
-  border-radius: 5px;
-  overflow: hidden;
-}
-
-.occupancyFill {
-  height: 100%;
-  border-radius: 5px;
-  transition: width 0.5s ease;
 }
 
 .exitQueueButton {

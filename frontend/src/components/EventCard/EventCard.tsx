@@ -25,11 +25,19 @@ function formatDate(dateStr: string): string {
 // Recibe un objeto "event" del tipo Event (definido en types/index.ts).
 interface EventCardProps {
   event: Event;
+  isSimulationMode?: boolean;
+  onSimulate?: (event: Event) => void;
 }
 
-export default function EventCard({ event }: EventCardProps) {
+export default function EventCard({ event, isSimulationMode, onSimulate }: EventCardProps) {
+  const CardWrapper = isSimulationMode ? "div" : Link;
+  const wrapperProps = isSimulationMode 
+    ? { onClick: () => onSimulate?.(event), className: `${styles.card} ${styles.simulationCard}` }
+    : { href: `/evento/${event.event_id}`, className: styles.card };
+
   return (
-    <Link href={`/evento/${event.event_id}`} className={styles.card}>
+    // @ts-ignore
+    <CardWrapper {...wrapperProps}>
       {/* Imagen del evento o un placeholder con gradiente */}
       <div className={styles.imageContainer}>
         {event.image_url ? (
@@ -84,6 +92,6 @@ export default function EventCard({ event }: EventCardProps) {
           </span>
         </div>
       </div>
-    </Link>
+    </CardWrapper>
   );
 }

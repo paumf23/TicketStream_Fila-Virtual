@@ -1,7 +1,6 @@
 import { getActiveEvents } from "@/lib/api";
-import EventCard from "@/components/EventCard/EventCard";
+import HomeClient from "@/components/HomeClient/HomeClient";
 import styles from "./page.module.css";
-import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -15,38 +14,12 @@ export default async function HomePage({
   try {
     const data = await getActiveEvents();
     
-    // Filtrar por categoría si está presente en la URL (insensible a mayúsculas/minúsculas)
-    const filteredEvents = category 
-      ? data.events.filter(e => 
-          e.category?.toLowerCase() === category.toLowerCase()
-        )
-      : data.events;
-
     return (
       <div className={styles.container}>
-        <section className={styles.hero}>
-          <h1 className={styles.title}>
-            {category ? `${category}` : "Eventos Disponibles"}
-          </h1>
-          <p className={styles.subtitle}>
-            Elegí tu evento y entrá a la fila virtual para comprar tus entradas.
-          </p>
-        </section>
-
-        {filteredEvents.length === 0 ? (
-          <div className={styles.emptyContainer}>
-            <p className={styles.empty}>
-              No hay eventos en la categoría <strong>{category}</strong> en este momento.
-            </p>
-            <Link href="/" className={styles.resetButton}>Ver todos los eventos</Link>
-          </div>
-        ) : (
-          <div className={styles.grid}>
-            {filteredEvents.map((event) => (
-              <EventCard key={event.event_id} event={event} />
-            ))}
-          </div>
-        )}
+        <HomeClient 
+          initialEvents={data.events} 
+          category={category} 
+        />
 
         {/* Footer de Métodos de Pago */}
         {!category && (
@@ -72,19 +45,16 @@ export default async function HomePage({
         )}
       </div>
     );
-  } catch {
+  } catch (error) {
+    console.error("Error loading events:", error);
     return (
       <div className={styles.container}>
-        <section className={styles.hero}>
-          <h1 className={styles.title}>Eventos Disponibles</h1>
-          <p className={styles.subtitle}>
-            Elegí tu evento y entrá a la fila virtual para comprar tus entradas.
+        <div style={{ textAlign: "center", padding: "100px 20px" }}>
+          <h1 className={styles.title}>Error</h1>
+          <p className={styles.error}>
+            No se pudieron cargar los eventos. Verificá que el backend esté corriendo.
           </p>
-        </section>
-        <p className={styles.error}>
-          No se pudieron cargar los eventos. Verificá que el backend esté
-          corriendo.
-        </p>
+        </div>
       </div>
     );
   }

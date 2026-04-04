@@ -43,6 +43,14 @@ export interface EventStats {
   revenue: number;
   avg_wait_time_seconds: number | null;
   peak_queue_length: number;
+  abandoned_count: number;
+  processed_count: number;
+  throughput: number;
+  effort: number;
+  trend: number;
+  last_jump: number;
+  incoming_rate: number;
+  tech_logs?: string[];
 }
 
 // Espeja: EventStatsResponse en responses.py
@@ -124,7 +132,28 @@ export interface WsPositionUpdate {
   event_id: string;
   queue_length: number;
   users_processed: number;
+  users_abandoned?: number;
+  processed_rate?: number;
+  throughput?: number;
+  incoming_rate?: number;
+  effort?: number;
+  last_jump?: number;
+  trend?: number;
+  tech_logs?: string[];
 }
+
+
+// --- Simulación ---
+export interface AdvancedSimulateRequest {
+  event_id: string;
+  num_users: number;
+  include_me: boolean;
+  user_id?: string;
+  target_position?: number;
+  processing_speed: number;
+  abandon_rate: number;
+}
+
 
 // Union type: un mensaje de WebSocket puede ser cualquiera de estos dos
 export type WsMessage = WsYourTurn | WsPositionUpdate;

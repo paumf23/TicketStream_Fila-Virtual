@@ -1,17 +1,25 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useParams, useRouter } from "next/navigation";
 import { getQueuePosition, getEventStats } from "@/lib/api";
 import { useWebSocket } from "@/lib/websocket";
 import ParticleTunnel from "@/components/ParticleTunnel/ParticleTunnel";
+import QueueStatus from "@/components/QueueStatus/QueueStatus";
+import LiveStats from "@/components/LiveStats/LiveStats";
+import TurnNotification from "@/components/TurnNotification/TurnNotification";
+import SimulationHUD from "@/components/SimulationHUD/SimulationHUD";
 import type { QueuePositionResponse, EventStats } from "@/types";
 import styles from "./page.module.css";
 
 export default function QueuePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const eventId = params.eventId as string;
   const router = useRouter();
+
+  const isSimMode = searchParams.get("sim") === "true";
+  const urlUserId = searchParams.get("user_id");
 
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
@@ -21,6 +29,11 @@ export default function QueuePage() {
   const [turnTTL, setTurnTTL] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<EventStats | null>(null);
+
+  // Simulation metrics from WebSocket
+  const [simProcessed, setSimProcessed] = useState(0);
+  const [simAbandoned, setSimAbandoned] = useState(0);
+  const [simThroughput, setSimThroughput] = useState(60);
 
   // Particle tunnel animation state
   const [burst, setBurst] = useState(false);
@@ -32,14 +45,19 @@ export default function QueuePage() {
   // Conectar al WebSocket para recibir actualizaciones en tiempo real
   const { lastMessage, isConnected } = useWebSocket(eventId);
 
-  // Leer el user_id de localStorage solo en el navegador (evita hydration error)
+  // Leer el user_id
   useEffect(() => {
-    const storedId = localStorage.getItem("vq_user_id");
-    const storedFirst = localStorage.getItem("vq_first_name") || "";
-    const storedLast = localStorage.getItem("vq_last_name") || "";
-    setUserId(storedId);
-    setUserName(`${storedFirst} ${storedLast}`.trim());
-  }, []);
+    if (isSimMode && urlUserId) {
+      setUserId(urlUserId);
+      setUserName("User Simulador");
+    } else {
+      const storedId = localStorage.getItem("vq_user_id");
+      const storedFirst = localStorage.getItem("vq_first_name") || "";
+      const storedLast = localStorage.getItem("vq_last_name") || "";
+      setUserId(storedId);
+      setUserName(`${storedFirst} ${storedLast}`.trim());
+    }
+  }, [isSimMode, urlUserId]);
 
   // Función para consultar la posición actual al backend
   const fetchPosition = useCallback(async () => {
@@ -97,6 +115,26 @@ export default function QueuePage() {
     if (lastMessage.type === "position_update") {
       fetchPosition();
       fetchStats();
+      
+      // Actualizar métricas dinámicas de simulación si vienen en el mensaje
+      setStats((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          processed_count: typeof (lastMessage as any).users_processed === "number" ? prev.processed_count + (lastMessage as any).users_processed : prev.processed_count,
+          abandoned_count: typeof (lastMessage as any).users_abandoned === "number" ? prev.abandoned_count + (lastMessage as any).users_abandoned : prev.abandoned_count,
+          throughput: typeof (lastMessage as any).throughput === "number" ? (lastMessage as any).throughput : prev.throughput,
+          processed_rate: typeof (lastMessage as any).processed_rate === "number" ? (lastMessage as any).processed_rate : (prev.processed_rate || 0),
+          incoming_rate: typeof (lastMessage as any).incoming_rate === "number" ? (lastMessage as any).incoming_rate : (prev.incoming_rate || 0),
+          effort: typeof (lastMessage as any).effort === "number" ? (lastMessage as any).effort : prev.effort,
+          last_jump: typeof (lastMessage as any).last_jump === "number" ? (lastMessage as any).last_jump : prev.last_jump,
+          trend: typeof (lastMessage as any).trend === "number" ? (lastMessage as any).trend : prev.trend,
+          tech_logs: (lastMessage as any).tech_logs || prev.tech_logs,
+        };
+      });
+      if (typeof (lastMessage as any).processed_rate === "number") {
+        setSimThroughput((lastMessage as any).processed_rate);
+      }
     }
   }, [lastMessage, userId, fetchPosition]);
 
@@ -168,50 +206,15 @@ export default function QueuePage() {
 
   // Pantalla cuando es el turno del usuario
   if (isMyTurn) {
-    const minutes = Math.floor(turnTTL / 60);
-    const seconds = turnTTL % 60;
-    const isExpired = turnTTL <= 0;
-
     return (
       <div className={styles.container}>
-        {isExpired ? (
-          <div className={styles.expiredCard}>
-            <span className={styles.turnIcon}>⏰</span>
-            <h1 className={styles.expiredTitle}>Se agotó el tiempo</h1>
-            <p className={styles.expiredMessage}>
-              El tiempo para completar tu compra ha expirado. Volvé a elegir un evento para reiniciar el proceso.
-            </p>
-            <button
-              className={styles.expiredButton}
-              onClick={() => router.push("/")}
-            >
-              Ver eventos disponibles
-            </button>
-          </div>
-        ) : (
-          <div className={styles.turnCard}>
-            <span className={styles.turnIcon}>🎉</span>
-            <h1 className={styles.turnTitle}>¡Es tu turno, {userName}!</h1>
-            <p className={styles.turnMessage}>
-              Tenés tiempo limitado para completar tu compra.
-            </p>
-            <button
-              className={styles.turnButton}
-              onClick={() => router.push(`/compra/${eventId}`)}
-            >
-              Ir a comprar 🎫
-            </button>
-            <button
-              className={styles.regretButton}
-              onClick={() => router.push("/")}
-            >
-              Me arrepentí
-            </button>
-            <p className={styles.turnTimer}>
-              Tiempo restante: {minutes}:{seconds.toString().padStart(2, "0")}
-            </p>
-          </div>
-        )}
+        <TurnNotification
+          userName={userName}
+          turnTTL={turnTTL}
+          onPurchase={() => router.push(`/compra/${eventId}`)}
+          onCancel={() => router.push("/")}
+          onViewEvents={() => router.push("/")}
+        />
       </div>
     );
   }
@@ -223,132 +226,51 @@ export default function QueuePage() {
       burst={burst}
       hyperspace={hyperspace}
     />
-    <div className={styles.container}>
-      <h1 className={styles.eventName}>
-        {userName ? `Hola ${userName}` : "Sala de espera"}
-      </h1>
-      <p className={styles.subtitle}>
-        Mantené esta página abierta. Te avisaremos cuando sea tu turno.
-      </p>
-
-      <div className={styles.card}>
-        <span className={styles.positionLabel}>Tu posición en la fila</span>
-
-        {position ? (
-          <>
-            <span className={styles.positionNumber}>{position.position}</span>
-
-            <div className={styles.progressSection}>
-              <div className={styles.progressBar}>
-                <div
-                  className={styles.progressFill}
-                  style={{
-                    width: `${Math.max(
-                      5,
-                      100 - (position.position / Math.max(1, position.queue_length)) * 100
-                    )}%`,
-                  }}
-                />
-              </div>
-              <span className={styles.progressText}>
-                {position.queue_length} personas en la fila
-              </span>
-            </div>
-
-            <div className={styles.infoGrid}>
-              <div className={styles.infoItem}>
-                <div className={styles.infoLabel}>Personas adelante</div>
-                <div className={styles.infoValue}>{position.position - 1}</div>
-              </div>
-              <div className={styles.infoItem}>
-                <div className={styles.infoLabel}>Espera estimada</div>
-                <div className={styles.infoValue}>{position.estimated_wait}</div>
-              </div>
-            </div>
-          </>
-        ) : error ? (
-          <p className={styles.error}>{error}</p>
-        ) : (
-          <p className={styles.waiting}>Cargando posición...</p>
-        )}
-
-        <div className={styles.connectionStatus}>
-          <span
-            className={`${styles.dot} ${
-              isConnected ? styles.dotConnected : styles.dotDisconnected
-            }`}
-          />
-          <span>{isConnected ? "Conectado en tiempo real" : "Reconectando..."}</span>
-        </div>
-      </div>
-
-      {/* Estadísticas del evento */}
-      {stats && (
-        <div className={styles.statsCard}>
-          <p className={styles.statsTitle}>📊 Estadísticas en vivo</p>
-          <div className={styles.statsGrid}>
-            <div className={styles.statItem}>
-              <div className={styles.statValue}>{stats.tickets_sold}</div>
-              <div className={styles.statLabel}>Tickets vendidos</div>
-            </div>
-            <div className={styles.statItem}>
-              <div className={`${styles.statValue} ${styles.statValueHighlight}`}>
-                ${stats.revenue.toLocaleString("es-AR")}
-              </div>
-              <div className={styles.statLabel}>Recaudación</div>
-            </div>
-            <div className={styles.statItem}>
-              <div className={styles.statValue}>{stats.queue_length}</div>
-              <div className={styles.statLabel}>En la fila</div>
-            </div>
-            <div className={styles.occupancyBar}>
-              <div className={styles.occupancyHeader}>
-                <span className={styles.statLabel}>Ocupación</span>
-                <span className={styles.statValue}>
-                  {stats.occupancy_percentage.toFixed(1)}%
-                </span>
-              </div>
-              <div className={styles.occupancyTrack}>
-                <div
-                  className={styles.occupancyFill}
-                  style={{
-                    width: `${Math.min(100, stats.occupancy_percentage)}%`,
-                    backgroundColor:
-                      stats.occupancy_percentage > 80
-                        ? "var(--color-danger)"
-                        : stats.occupancy_percentage > 50
-                        ? "var(--color-warning)"
-                        : "var(--color-success)",
-                  }}
-                />
-              </div>
-            </div>
-            <div className={styles.statItem}>
-              <div className={styles.statValue}>{stats.peak_queue_length}</div>
-              <div className={styles.statLabel}>Pico máximo fila</div>
-            </div>
-            <div className={styles.statItem}>
-              <div className={styles.statValue}>
-                {stats.avg_wait_time_seconds
-                  ? `${Math.round(stats.avg_wait_time_seconds)}s`
-                  : "—"}
-              </div>
-              <div className={styles.statLabel}>Espera promedio</div>
-            </div>
-            <div className={styles.statItem}>
-              <div className={styles.statValue}>{stats.remaining_capacity}</div>
-              <div className={styles.statLabel}>Entradas restantes</div>
-            </div>
-          </div>
-        </div>
+    <div className={`${styles.container} ${isSimMode ? styles.simMode : ""}`}>
+      {isSimMode && (
+        <SimulationHUD 
+          processedCount={stats?.processed_count || 0}
+          abandonedCount={stats?.abandoned_count || 0}
+          processedRate={(stats as any)?.processed_rate || 0}
+          techLogs={stats?.tech_logs || []}
+        />
       )}
 
-      <button
-        className={styles.exitQueueButton}
-        onClick={() => router.push("/")}
-      >
-        Salir de la fila
-      </button>
+      <h1 className={styles.eventName}>
+        {isSimMode ? "⚙️ Control de Simulación" : (userName ? `Hola ${userName}` : "Sala de espera")}
+      </h1>
+      <p className={styles.subtitle}>
+        {isSimMode 
+          ? "La simulación está activa. Los usuarios están siendo procesados según la tasa configurada."
+          : "Mantené esta página abierta. Te avisaremos cuando sea tu turno."}
+      </p>
+
+      <QueueStatus 
+        position={position} 
+        error={error} 
+        isConnected={isConnected} 
+      />
+
+      {/* Estadísticas del evento */}
+      {stats && <LiveStats stats={stats} />}
+
+      <div className={styles.actions}>
+        <button
+          className={`${styles.exitQueueButton} ${isSimMode ? styles.simExitButton : ""}`}
+          onClick={() => router.push(isSimMode ? "/?simulation=true" : "/")}
+        >
+          {isSimMode ? "Detener Simulación" : "Salir de la fila"}
+        </button>
+        
+        {isSimMode && (
+          <button
+            className={styles.resetButton}
+            onClick={() => router.push("/")}
+          >
+            Volver a la Home Normal
+          </button>
+        )}
+      </div>
     </div>
     </>
   );

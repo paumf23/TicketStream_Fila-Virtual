@@ -1,0 +1,142 @@
+.actionCenter {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.floatingEnterButton {
+  display: block;
+  margin: 0 auto;
+  padding: 18px 48px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 10px 30px rgba(123, 104, 238, 0.4);
+}
+
+.floatingEnterButton:hover {
+  transform: scale(1.02);
+  box-shadow: 0 15px 40px rgba(123, 104, 238, 0.6);
+}
+
+.formCard {
+  background-color: var(--color-surface);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-surface-light);
+}
+
+.formTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 600px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.input {
+  padding: 14px 20px;
+  font-size: 1rem;
+  background: var(--color-surface-light);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+}
+
+.inputError {
+  border-color: var(--color-danger) !important;
+}
+
+.fieldError {
+  font-size: 0.75rem;
+  color: var(--color-danger);
+  margin-top: 2px;
+}
+
+.formButtons {
+  display: flex;
+  gap: 20px;
+}
+
+.cancelButton {
+  flex: 0.5;
+  padding: 16px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancelButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.confirmButton {
+  flex: 1;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.confirmButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.confirmButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.soldOutBadge {
+  text-align: center;
+  padding: 30px;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 16px;
+  color: var(--color-danger);
+  font-size: 1.2rem;
+  font-weight: 700;
+}

@@ -1,0 +1,164 @@
+.hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none; /* Dejar pasar clics a los componentes de abajo */
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--color-simulation);
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(0, 242, 255, 0.3);
+  border-radius: var(--radius-sm);
+  pointer-events: auto;
+}
+
+.recIndicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  background-color: #ff0000;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+  box-shadow: 0 0 10px #ff0000;
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+.timer {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.mainContent {
+  flex: 1;
+  position: relative;
+  margin-top: 20px;
+}
+
+.terminal {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 350px;
+  height: 180px;
+  background: rgba(10, 10, 15, 0.85);
+  border: 1px solid rgba(0, 242, 255, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.75rem;
+  pointer-events: auto;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.terminalHeader {
+  font-size: 0.65rem;
+  color: rgba(0, 242, 255, 0.4);
+  margin-bottom: 5px;
+  border-bottom: 1px solid rgba(0, 242, 255, 0.1);
+  padding-bottom: 5px;
+}
+
+.logEntry {
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logTime {
+  color: rgba(0, 242, 255, 0.5);
+  margin-right: 8px;
+}
+
+.logMsg {
+  color: #fff;
+}
+
+.sideStats {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  pointer-events: auto;
+}
+
+.glassCard {
+  background: rgba(20, 20, 25, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 242, 255, 0.15);
+  padding: 15px 20px;
+  border-radius: var(--radius-md);
+  min-width: 180px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.statLabel {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: rgba(0, 242, 255, 0.6);
+  margin-bottom: 4px;
+}
+
+.statValue {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-simulation);
+}
+
+.statUnit {
+  font-size: 0.75rem;
+  margin-left: 4px;
+  font-weight: 400;
+}
+
+/* Efecto de líneas de escaneo digital */
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.05) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.01),
+    rgba(0, 255, 0, 0.005),
+    rgba(0, 0, 255, 0.01)
+  );
+  background-size: 100% 4px, 3px 100%;
+  pointer-events: none;
+  z-index: 90;
+  opacity: 0.4;
+}

@@ -98,22 +98,31 @@ async def get_position(
 
     total = await redis_repository.queue_length(event_id)
 
+    # Obtener velocidad configurada para estimación dinámica
+    config = await redis_repository.get_event_config(event_id)
+    speed = config.get("speed", 60) # 60 u/min por defecto
 
     return {
         "user_id": user_id,
         "event_id": event_id,
         "position": position + 1,
         "queue_length": total,
-        "estimated_wait": _estimate_wait(position),
+        "estimated_wait": await _estimate_wait(position, speed),
     }
 
 
-def _estimate_wait(position: int) -> str:
-
-    minutes = max(1, position // 600 + 1)
-    if minutes == 1:
+async def _estimate_wait(position: int, speed: int) -> str:
+    if speed <= 0:
+        return "Pendiente..."
+    
+    minutes = position / speed
+    
+    if minutes < 0.5:
+        return "Pocos segundos"
+    if minutes < 1:
         return "Menos de 1 minuto"
-    return f"~{minutes} minutos"
+    
+    return f"~{int(minutes) + 1} minutos"
 
 
 
