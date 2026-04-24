@@ -12,7 +12,7 @@ export default async function HomePage({
   const { category } = await searchParams;
 
   try {
-    const data = await getActiveEvents();
+    const data = await getActiveEvents(category);
     
     return (
       <div className={styles.container}>

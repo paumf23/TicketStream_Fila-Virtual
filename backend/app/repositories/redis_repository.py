@@ -22,6 +22,8 @@ async def queue_push(event_id: str, user_id: str) -> int:
     position = await redis_pool.rpush(_queue_key(event_id), user_id)
     await increment_incoming_count(event_id, 1)
     await _update_peak_queue_length(event_id, position)
+    # Activar el Worker automáticamente para este evento
+    await add_active_simulation(event_id)
     return position
 
 
@@ -185,8 +187,8 @@ async def get_event_config(event_id: str) -> dict:
     key = _event_config_key(event_id)
     data = await redis_pool.hgetall(key)
     return {
-        "speed": int(data.get("speed", 60)) if data.get("speed") else 60,
-        "abandon_rate": float(data.get("abandon_rate", 0)) if data.get("abandon_rate") else 0.0,
+        "speed": int(data.get("speed") or 360),
+        "abandon_rate": float(data.get("abandon_rate") or 1.5),
     }
 
 
@@ -213,3 +215,5 @@ async def bulk_push(event_id: str, user_ids: list[str]) -> None:
         new_length = results[-1]
         await _update_peak_queue_length(event_id, new_length)
     await increment_incoming_count(event_id, len(user_ids))
+    # Activar el Worker automáticamente para este evento
+    await add_active_simulation(event_id)

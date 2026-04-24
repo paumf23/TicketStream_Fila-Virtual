@@ -54,6 +54,11 @@ async def simulate_load(
         )
 
     created_users = []
+    # Limpiar cola previa y resetear configuración para que no persista de simulaciones avanzadas
+    await redis_repository.clear_queue(body.event_id)
+    await redis_repository.redis_pool.delete(f"event:{body.event_id}:stats")
+    await redis_repository.set_event_config(body.event_id, speed=360, abandon_rate=1.5)
+
     for _ in range(body.num_users):
         user_id = f"sim-{uuid.uuid4().hex[:12]}"
         first_name = random.choice(FIRST_NAMES)
@@ -101,8 +106,8 @@ async def simulate_advanced(
     await redis_repository.redis_pool.hset(
         f"event:{body.event_id}:stats",
         mapping={
-            "total_capacity": event.total_capacity,
-            "remaining_capacity": event.remaining_capacity,
+            "total_capacity": body.event_capacity,
+            "remaining_capacity": body.event_capacity,
             "price": float(event.price),
         }
     )

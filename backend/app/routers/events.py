@@ -18,8 +18,11 @@ async def list_all_events(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/active", response_model=EventListResponse)
-async def list_active_events(db: AsyncSession = Depends(get_db)):
-    events = await event_service.get_active_events(db)
+async def list_active_events(
+    category: str | None = None,
+    db: AsyncSession = Depends(get_db)
+):
+    events = await event_service.get_active_events(db, category)
     return {"events": events, "total": len(events)}
 
 

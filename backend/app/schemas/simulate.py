@@ -25,3 +25,4 @@ class AdvancedSimulateRequest(BaseModel):
     target_position: int | None = Field(default=None, gt=0, description="Posición objetivo del usuario real")
     processing_speed: int = Field(default=60, gt=0, description="Usuarios por minuto")
     abandon_rate: float = Field(default=0.0, ge=0.0, le=100.0, description="Tasa de abandono (0-100%)")
+    event_capacity: int = Field(default=15000, ge=10000, le=50000, description="Capacidad del evento (entradas disponibles)")

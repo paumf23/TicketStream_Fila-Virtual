@@ -52,8 +52,12 @@ async function request<T>(
 // ══════════════════════════════════════════════════════════════
 
 // GET /api/events/active → Lista de eventos activos (para la landing page)
-export const getActiveEvents = () =>
-  request<EventListResponse>("/api/events/active");
+export const getActiveEvents = (category?: string) => {
+  const endpoint = category 
+    ? `/api/events/active?category=${encodeURIComponent(category)}`
+    : "/api/events/active";
+  return request<EventListResponse>(endpoint);
+};
 
 // GET /api/events/{eventId} → Detalle de un evento específico
 export const getEvent = (eventId: string) =>
@@ -131,6 +135,7 @@ export const advancedSimulate = (data: {
   target_position?: number;
   processing_speed: number;
   abandon_rate: number;
+  event_capacity: number;
 }) =>
   request<{
     status: string;

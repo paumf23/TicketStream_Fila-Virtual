@@ -86,6 +86,7 @@
   align-items: center;
   padding-top: 12px;
   border-top: 1px solid var(--color-surface-light);
+  gap: 8px;
 }
 
 .capacity {
@@ -99,6 +100,7 @@
   padding: 4px 10px;
   border-radius: 20px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .statusActive {

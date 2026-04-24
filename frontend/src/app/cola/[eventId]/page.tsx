@@ -28,12 +28,24 @@ export default function QueuePage() {
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [turnTTL, setTurnTTL] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [artificialLoading, setArtificialLoading] = useState(true);
   const [stats, setStats] = useState<EventStats | null>(null);
+  const [waitingBehind, setWaitingBehind] = useState(0);
 
-  // Simulation metrics from WebSocket
-  const [simProcessed, setSimProcessed] = useState(0);
-  const [simAbandoned, setSimAbandoned] = useState(0);
-  const [simThroughput, setSimThroughput] = useState(60);
+  // Forzar scroll al tope instantáneamente al entrar
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Timer de carga artificial de 4 segundos
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setArtificialLoading(false);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, []);
+
+
 
   // Particle tunnel animation state
   const [burst, setBurst] = useState(false);
@@ -114,26 +126,25 @@ export default function QueuePage() {
 
     if (lastMessage.type === "position_update") {
       fetchPosition();
-      fetchStats();
       
-      // Actualizar métricas dinámicas de simulación si vienen en el mensaje
-      setStats((prev: any) => {
+      // Actualizar estadísticas en tiempo real — solo campos para SimulationHUD
+      // LiveStats maneja internamente sus propias métricas (simStats) via lastMessage
+      const msg = lastMessage as any;
+      setStats((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
-          processed_count: typeof (lastMessage as any).users_processed === "number" ? prev.processed_count + (lastMessage as any).users_processed : prev.processed_count,
-          abandoned_count: typeof (lastMessage as any).users_abandoned === "number" ? prev.abandoned_count + (lastMessage as any).users_abandoned : prev.abandoned_count,
-          throughput: typeof (lastMessage as any).throughput === "number" ? (lastMessage as any).throughput : prev.throughput,
-          processed_rate: typeof (lastMessage as any).processed_rate === "number" ? (lastMessage as any).processed_rate : (prev.processed_rate || 0),
-          incoming_rate: typeof (lastMessage as any).incoming_rate === "number" ? (lastMessage as any).incoming_rate : (prev.incoming_rate || 0),
-          effort: typeof (lastMessage as any).effort === "number" ? (lastMessage as any).effort : prev.effort,
-          last_jump: typeof (lastMessage as any).last_jump === "number" ? (lastMessage as any).last_jump : prev.last_jump,
-          trend: typeof (lastMessage as any).trend === "number" ? (lastMessage as any).trend : prev.trend,
-          tech_logs: (lastMessage as any).tech_logs || prev.tech_logs,
+          processed_count: (prev.processed_count || 0) + (msg.users_processed || 0),
+          abandoned_count: (prev.abandoned_count || 0) + (msg.users_abandoned || 0),
+          processed_rate: msg.processed_rate !== undefined ? msg.processed_rate : prev.processed_rate,
+          throughput: msg.throughput !== undefined ? msg.throughput : prev.throughput,
+          tech_logs: msg.tech_logs || prev.tech_logs,
         };
       });
-      if (typeof (lastMessage as any).processed_rate === "number") {
-        setSimThroughput((lastMessage as any).processed_rate);
+
+      // Simulación normal: incrementar usuarios detrás (cosmético)
+      if (!isSimMode) {
+        setWaitingBehind(prev => prev + Math.floor(Math.random() * 4) + 1);
       }
     }
   }, [lastMessage, userId, fetchPosition]);
@@ -185,12 +196,22 @@ export default function QueuePage() {
     return () => clearInterval(interval);
   }, [isMyTurn, turnTTL]);
 
-  // Pantalla de carga inicial
-  if (loading) {
+  // Pantalla de carga (Datos + Artificial para mejor UX)
+  if (loading || artificialLoading) {
     return (
-      <div className={styles.container}>
-        <p className={styles.waiting}>Cargando...</p>
-      </div>
+      <>
+        <ParticleTunnel
+          speedMultiplier={2.5}
+          burst={false}
+          hyperspace={false}
+        />
+        <div className={styles.loadingContainer}>
+          <div className={styles.loaderContent}>
+            <p className={styles.syncText}>Sincronizando con el servidor...</p>
+          </div>
+          <div className={styles.spinner}></div>
+        </div>
+      </>
     );
   }
 
@@ -221,57 +242,50 @@ export default function QueuePage() {
 
   return (
     <>
-    <ParticleTunnel
-      speedMultiplier={speedMultiplier}
-      burst={burst}
-      hyperspace={hyperspace}
-    />
-    <div className={`${styles.container} ${isSimMode ? styles.simMode : ""}`}>
-      {isSimMode && (
-        <SimulationHUD 
-          processedCount={stats?.processed_count || 0}
-          abandonedCount={stats?.abandoned_count || 0}
-          processedRate={(stats as any)?.processed_rate || 0}
-          techLogs={stats?.tech_logs || []}
-        />
-      )}
-
-      <h1 className={styles.eventName}>
-        {isSimMode ? "⚙️ Control de Simulación" : (userName ? `Hola ${userName}` : "Sala de espera")}
-      </h1>
-      <p className={styles.subtitle}>
-        {isSimMode 
-          ? "La simulación está activa. Los usuarios están siendo procesados según la tasa configurada."
-          : "Mantené esta página abierta. Te avisaremos cuando sea tu turno."}
-      </p>
-
-      <QueueStatus 
-        position={position} 
-        error={error} 
-        isConnected={isConnected} 
+      <ParticleTunnel
+        speedMultiplier={speedMultiplier}
+        burst={burst}
+        hyperspace={hyperspace}
       />
-
-      {/* Estadísticas del evento */}
-      {stats && <LiveStats stats={stats} />}
-
-      <div className={styles.actions}>
-        <button
-          className={`${styles.exitQueueButton} ${isSimMode ? styles.simExitButton : ""}`}
-          onClick={() => router.push(isSimMode ? "/?simulation=true" : "/")}
-        >
-          {isSimMode ? "Detener Simulación" : "Salir de la fila"}
-        </button>
-        
+      <div className={`${styles.container} ${isSimMode ? styles.simMode : ""}`}>
         {isSimMode && (
-          <button
-            className={styles.resetButton}
-            onClick={() => router.push("/")}
-          >
-            Volver a la Home Normal
-          </button>
+          <SimulationHUD
+            processedCount={stats?.processed_count || 0}
+            abandonedCount={stats?.abandoned_count || 0}
+            processedRate={(stats as any)?.processed_rate || 0}
+            throughput={(stats as any)?.throughput || 0}
+            onStop={() => router.push("/?simulation=true")}
+            onGoHome={() => router.push("/")}
+          />
+        )}
+
+        <h1 className={styles.eventName}>
+          {isSimMode ? "⚙️ Control de Simulación" : (userName ? `Hola ${userName}` : "Sala de espera")}
+        </h1>
+        <p className={styles.subtitle}>
+          {isSimMode
+            ? "La simulación está activa. Los usuarios están siendo procesados según la tasa configurada."
+            : "Mantené esta página abierta. Te avisaremos cuando sea tu turno."}
+        </p>
+
+        <QueueStatus
+          position={position}
+          error={error}
+          isConnected={isConnected}
+          waitingBehind={waitingBehind}
+        />
+
+        {/* Estadísticas del evento */}
+        {stats && (
+          <LiveStats 
+            stats={stats} 
+            isSimMode={isSimMode} 
+            lastMessage={lastMessage} 
+            waitingBehind={waitingBehind} 
+            eventId={eventId}
+          />
         )}
       </div>
-    </div>
     </>
   );
 }

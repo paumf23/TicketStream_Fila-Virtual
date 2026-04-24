@@ -19,6 +19,12 @@ export default function HomeClient({ initialEvents, category }: HomeClientProps)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  // Filtrar eventos por categoría (aunque ya vengan filtrados del backend, 
+  // esto asegura consistencia en el cliente)
+  const filteredEvents = category 
+    ? initialEvents.filter(e => e.category === category)
+    : initialEvents;
+
   const handleSimulateClick = (event: Event) => {
     setSelectedEvent(event);
     setIsDrawerOpen(true);
@@ -52,7 +58,7 @@ export default function HomeClient({ initialEvents, category }: HomeClientProps)
           </div>
         ) : (
           <div className={styles.grid}>
-            {initialEvents.map((event) => (
+            {filteredEvents.map((event) => (
               <EventCard 
                 key={event.event_id} 
                 event={event} 

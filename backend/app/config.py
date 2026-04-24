@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     # --- Worker (Procesador de Cola) ---
     BATCH_SIZE: int = 10
     PROCESS_INTERVAL: int = 1
-    ALLOWED_TTL: int = 600
+    ALLOWED_TTL: int = 120
 
     # --- Reconexión WebSocket ---
     RECONNECT_GRACE_PERIOD: int = 30

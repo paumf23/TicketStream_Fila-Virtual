@@ -62,7 +62,7 @@ export default function EnterQueueForm({
     setEntering(true);
     try {
       // Simular usuarios en la fila
-      const numSimulated = Math.floor(Math.random() * 71) + 80;
+      const numSimulated = Math.floor(Math.random() * 41) + 140;
       await simulateLoad(eventId, numSimulated);
 
       // Entrar a la fila real

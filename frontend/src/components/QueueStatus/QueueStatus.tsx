@@ -8,9 +8,19 @@ interface QueueStatusProps {
   position: QueuePositionResponse | null;
   error: string | null;
   isConnected: boolean;
+  waitingBehind?: number;
 }
 
-export default function QueueStatus({ position, error, isConnected }: QueueStatusProps) {
+export default function QueueStatus({ position, error, isConnected, waitingBehind = 0 }: QueueStatusProps) {
+  const [initialPosition, setInitialPosition] = React.useState<number | null>(null);
+
+  // Capturamos la primera posición que recibe el usuario como punto de referencia (100%)
+  React.useEffect(() => {
+    if (position?.position && initialPosition === null) {
+      setInitialPosition(position.position);
+    }
+  }, [position, initialPosition]);
+
   return (
     <div className={styles.card}>
       <span className={styles.positionLabel}>Tu posición en la fila</span>
@@ -26,13 +36,13 @@ export default function QueueStatus({ position, error, isConnected }: QueueStatu
                 style={{
                   width: `${Math.max(
                     5,
-                    100 - (position.position / Math.max(1, position.queue_length)) * 100
+                    initialPosition ? (position.position / initialPosition) * 100 : 100
                   )}%`,
                 }}
               />
             </div>
             <span className={styles.progressText}>
-              {position.queue_length} personas en la fila
+              {position.queue_length + waitingBehind} personas en la fila
             </span>
           </div>
 

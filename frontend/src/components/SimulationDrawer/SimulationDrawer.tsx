@@ -23,6 +23,7 @@ export default function SimulationDrawer({
   const [targetPosition, setTargetPosition] = useState(50);
   const [speed, setSpeed] = useState(60);
   const [abandonRate, setAbandonRate] = useState(0);
+  const [eventCapacity, setEventCapacity] = useState(15000);
   const [loading, setLoading] = useState(false);
 
   // Generar o recuperar ID de usuario persistente
@@ -55,6 +56,7 @@ export default function SimulationDrawer({
         target_position: includeMe ? targetPosition : undefined,
         processing_speed: speed,
         abandon_rate: abandonRate,
+        event_capacity: eventCapacity,
       });
 
       // Redirigir a la cola en modo simulación
@@ -154,6 +156,21 @@ export default function SimulationDrawer({
               step="0.5"
               value={abandonRate}
               onChange={(e) => setAbandonRate(parseFloat(e.target.value))}
+              className={styles.slider}
+            />
+          </div>
+
+          <div className={styles.section}>
+            <label className={styles.label}>
+              Entradas Disponibles <span className={styles.value}>{eventCapacity.toLocaleString()}</span>
+            </label>
+            <input
+              type="range"
+              min="10000"
+              max="50000"
+              step="1000"
+              value={eventCapacity}
+              onChange={(e) => setEventCapacity(parseInt(e.target.value))}
               className={styles.slider}
             />
           </div>

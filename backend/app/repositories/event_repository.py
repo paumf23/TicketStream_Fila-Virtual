@@ -14,10 +14,12 @@ async def get_all_events(db: AsyncSession) -> list[Event]:
 
 
 #
-async def get_active_events(db: AsyncSession) -> list[Event]:
-    result = await db.execute(
-        select(Event).where(Event.status == "active")
-    )
+async def get_active_events(db: AsyncSession, category: str | None = None) -> list[Event]:
+    query = select(Event).where(Event.status == "active")
+    if category:
+        query = query.where(Event.category == category)
+    
+    result = await db.execute(query)
     return list(result.scalars().all())
 
 

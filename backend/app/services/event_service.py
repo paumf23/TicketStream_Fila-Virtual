@@ -30,9 +30,8 @@ async def get_all_events(db: AsyncSession) -> list[dict]:
     return [_event_to_dict(e) for e in events]
 
 
-async def get_active_events(db: AsyncSession) -> list[dict]:
-
-    events = await event_repository.get_active_events(db)
+async def get_active_events(db: AsyncSession, category: str | None = None) -> list[dict]:
+    events = await event_repository.get_active_events(db, category)
     return [_event_to_dict(e) for e in events]
 
 
@@ -206,7 +205,9 @@ async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
     throughput = last_jump
 
     tickets_sold = event.total_capacity - event.remaining_capacity
-    revenue = float(event.price) * tickets_sold
+    redis_revenue = float(last_stats.get("revenue", 0.0))
+    db_revenue = float(event.price) * tickets_sold
+    revenue = max(redis_revenue, db_revenue)
 
     occupancy_percentage = round(
         (tickets_sold / max(1, event.total_capacity)) * 100, 2

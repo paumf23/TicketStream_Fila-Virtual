@@ -31,34 +31,60 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
     speed = config["speed"]  # usuarios por minuto
     abandon_rate = config["abandon_rate"]  # 0-100
 
-    # 2. Obtener el lote dinámico
+    # 1. Calcular cuotas de salida proyectadas
+    queue_length = await redis_repository.queue_length(event_id)
+    
+    # Abandonos se calculan sobre el BATCH actual (lógica local)
+    abandon_quota = round(batch_size * (abandon_rate / 100))
+    # Probabilístico: si el cálculo da 0 pero hay tasa de abandono, dar una chance
+    if abandon_quota == 0 and abandon_rate > 0:
+        if random.random() < (batch_size * abandon_rate / 100):
+            abandon_quota = 1
+            
+    abandon_quota = min(abandon_quota, batch_size - 1)
+    processed_quota = batch_size - abandon_quota
+    
+    total_to_pop = batch_size  # siempre saca exactamente batch_size
+
+    logger.info(f"Evento {event_id}: Q_Len={queue_length}, Proc_Quota={processed_quota}, Aband_Quota={abandon_quota}")
+
+    # 2. Obtener el lote total (ahora incluye turnos y abandonos)
     users = await redis_repository.queue_pop(
-        event_id, batch_size=batch_size
+        event_id, batch_size=total_to_pop
     )
 
     if not users:
-        # Si no hay nadie, igual calculamos tendencia basada en entradas
+        # Si no hay nadie, verificamos si la cola está realmente vacía para desactivar el Worker
+        if queue_length == 0:
+            logger.info(f"Fila vacía para evento {event_id}. Desactivando Worker automáticamente.")
+            await redis_repository.remove_active_simulation(event_id)
+
         incoming = await redis_repository.get_incoming_count(event_id)
         await redis_repository.reset_incoming_count(event_id)
         # Tendencia = Entraron - Salieron (en este caso 0 salieron)
-        # Convertimos a rate por minuto: (count / interval) * 60
         trend = int((incoming / interval) * 60)
         return {"total": 0, "effort": 0, "jump": 0, "trend": trend}
 
     processed_count = 0
     abandoned_count = 0
 
-    for user_id in users:
-        # Simular abandono
-        if random.random() * 100 < abandon_rate:
+    for i, user_id in enumerate(users):
+        is_sim = user_id.startswith("sim-")
+        
+        # ¿Debe ser un abandono simulado?
+        should_abandon = is_sim and (processed_count >= processed_quota)
+
+        if should_abandon:
             abandoned_count += 1
             continue
 
+        # Procesar como turno entregado
         await redis_repository.set_allowed(
             event_id, user_id, ttl_seconds=settings.ALLOWED_TTL
         )
         processed_count += 1
 
+        # Notificar solo si es un usuario real (no simulado) o para depuración
         await redis_repository.publish(
             event_id,
             json.dumps({
@@ -69,7 +95,9 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
             }),
         )
 
-    # Actualizar contadores globales
+    logger.info(f"[DEBUG] Evento {event_id}: Salieron {len(users)} (Proc: {processed_count}, Aband: {abandoned_count})")
+
+    # Actualizar contadores globales en Redis
     if abandoned_count > 0:
         await redis_repository.increment_abandoned_count(event_id, abandoned_count)
     if processed_count > 0:
@@ -80,61 +108,33 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
     await redis_repository.reset_incoming_count(event_id)
     outgoing = processed_count + abandoned_count
     
-    # Tendencia por minuto
-    trend = int(((incoming - outgoing) / interval) * 60)
-    
     # Ritmo de Ingreso por minuto
     incoming_rate = int((incoming / interval) * 60)
     
-    # Calcular Esfuerzo (Tiempo real vs Intervalo disponible)
+    # 4. Calcular métricas finales
     execution_time = time.time() - start_time
     effort = min(100, round((execution_time / interval) * 100, 1))
-
-    queue_length = await redis_repository.queue_length(event_id)
     
-    # Guardar último snapshot para el App (REST API)
-    await redis_repository.redis_pool.hset(
-        f"event:{event_id}:stats",
-        mapping={
-            "effort": effort,
-            "last_jump": outgoing,
-            "trend": trend,
-            "incoming_rate": incoming_rate
-        }
-    )
-
-    # Métricas técnicas adicionales para la consola
-    import psutil
-    cpu_percent = psutil.cpu_percent()
-    
-    # Medir latencia de Redis (ping simple)
-    r_start = time.time()
-    await redis_repository.redis_pool.ping()
-    # El flujo total de salida en este tick
-    outgoing = processed_count + abandoned_count
-    
-    # Obtener stats actuales para calcular tendencia
-    last_stats = await redis_repository.redis_pool.hgetall(f"event:{event_id}:stats")
-    
-    total_capacity = int(last_stats.get("total_capacity", 1000))
-    price = float(last_stats.get("price", 0.0))
-    # Para la simulación, recalculamos remaining_capacity localmente o la pedimos a Redis
-    # Aquí vamos a simular que el procesamiento reduce el remaining (aunque no toque MySQL aún)
-    prev_remaining = int(last_stats.get("remaining_capacity", total_capacity))
-    remaining_capacity = max(0, prev_remaining - processed_count)
-
-    # Simular esfuerzo del servidor (oscilación aleatoria)
-    effort = round(random.uniform(15.0, 45.0), 2)
-    
-    # Simular ritmo de ingreso (en simulación avanzada, suele ser 0 o lo que venga de Redis)
-    incoming_rate = int(last_stats.get("incoming_rate", 0))
+    # Flujo total de salida (Throughput)
+    throughput_rate = int((outgoing / interval) * 60)
     
     # Tendencia: (Ingreso - Salida) proyectado a 1 minuto
-    # Asumimos que outgoing es por intervalo, así que (outgoing/interval)*60 es el rate
-    throughput_rate = int((outgoing / interval) * 60)
     trend = incoming_rate - throughput_rate
 
-    # 4. Guardar snapshot de métricas en Redis
+    # Obtener stats actuales para precio y recaudación
+    last_stats = await redis_repository.redis_pool.hgetall(f"event:{event_id}:stats")
+    total_capacity = int(last_stats.get("total_capacity", 1000))
+    price = float(last_stats.get("price", 0.0))
+    current_revenue = float(last_stats.get("revenue", 0.0))
+    
+    # Calcular capacidad restante (solo contar como venta si hay capacidad)
+    prev_remaining = int(last_stats.get("remaining_capacity", total_capacity))
+    saleable = min(processed_count, prev_remaining)  # solo los que caben
+    new_revenue = saleable * price
+    total_revenue = current_revenue + new_revenue
+    remaining_capacity = max(0, prev_remaining - saleable)
+
+    # 5. Guardar snapshot actualizado en Redis
     stats_data = {
         "effort": effort,
         "last_jump": outgoing,
@@ -143,15 +143,31 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
         "processed_rate": int((processed_count / interval) * 60),
         "total_capacity": total_capacity,
         "remaining_capacity": remaining_capacity,
-        "price": price
+        "revenue": total_revenue,
+        "processed_count": int(last_stats.get("processed_count", 0)) + processed_count,
+        "abandoned_count": int(last_stats.get("abandoned_count", 0)) + abandoned_count
     }
     await redis_repository.redis_pool.hset(f"event:{event_id}:stats", mapping=stats_data)
 
-    # 5. Retornar telemetría para el WebSocket global
+    # Generar logs técnicos rotativos para evitar repetición
+    tick_count = int(time.time())
+    tech_logs = []
+    
+    # Log 1: Siempre el estado del lote
+    tech_logs.append(f"[WORKER] Batch_ID: {random.getrandbits(16):04x} | Proc: {len(users)}u | Load: {effort}%")
+    
+    # Log 2: Rotar entre Redis y Sistema
+    if tick_count % 3 == 0:
+        tech_logs.append(f"[REDIS] Latency: {random.uniform(0.1, 0.9):.2f}ms | Pipeline: HSET [OK] | Shard: queue_0")
+    elif tick_count % 3 == 1:
+        tech_logs.append(f"[SYSTEM] Mem: {200 + random.randint(10, 50)}MB | CPU_Core: {random.randint(5, 15)}% | IO: Stable")
+    else:
+        tech_logs.append(f"[NETWORK] WS_Broad: 1.4KB | Clients: 1 | Latency: {random.randint(5, 25)}ms")
+
     return {
         "type": "position_update",
         "event_id": event_id,
-        "queue_length": queue_length,
+        "queue_length": queue_length - len(users),
         "users_processed": processed_count,
         "users_abandoned": abandoned_count,
         "processed_rate": stats_data["processed_rate"],
@@ -160,11 +176,10 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
         "effort": effort,
         "last_jump": outgoing,
         "trend": trend,
-        "tech_logs": [
-            f"[WORKER] Lote de {len(users)} usuarios procesado (Pipeline OK)",
-            f"[REDIS] {processed_count} compras / {abandoned_count} abandonos",
-            f"[DIAG] Rendimiento: {throughput_rate} u/min | Esfuerzo: {effort}%"
-        ]
+        "revenue": total_revenue,
+        "remaining_capacity": remaining_capacity,
+        "occupancy_percentage": ((total_capacity - remaining_capacity) / total_capacity) * 100 if total_capacity > 0 else 0,
+        "tech_logs": tech_logs
     }
 
 
@@ -190,7 +205,18 @@ async def run_worker():
                 if not config:
                     continue
 
-                batch_size = config.get("speed", settings.BATCH_SIZE)
+                # Speed default 360 u/min → base = 6 u/tick
+                # Dividimos por 60 para que el Worker (que corre cada 1s) procese ~6 u/seg.
+                speed = config.get("speed", 360)
+                batch_size = int(speed / 60)
+                # Variación dinámica proporcional
+                variation = 1 if speed < 120 else random.randint(-2, 3)
+                batch_size = max(1, batch_size + variation)
+                
+                # Clamp solo para simulación normal (para mantener realismo visual)
+                if speed <= 360:
+                    batch_size = min(9, max(4, batch_size))
+                
                 abandon_rate = config.get("abandon_rate", 2.0)
                 interval = settings.PROCESS_INTERVAL
 

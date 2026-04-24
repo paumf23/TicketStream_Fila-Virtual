@@ -50,6 +50,7 @@ export interface EventStats {
   trend: number;
   last_jump: number;
   incoming_rate: number;
+  processed_rate: number;
   tech_logs?: string[];
 }
 
@@ -139,6 +140,7 @@ export interface WsPositionUpdate {
   effort?: number;
   last_jump?: number;
   trend?: number;
+  remaining_capacity?: number;
   tech_logs?: string[];
 }
 
@@ -152,6 +154,7 @@ export interface AdvancedSimulateRequest {
   target_position?: number;
   processing_speed: number;
   abandon_rate: number;
+  event_capacity: number;
 }
 
 
