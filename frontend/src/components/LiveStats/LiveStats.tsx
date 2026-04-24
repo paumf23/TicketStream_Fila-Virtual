@@ -208,16 +208,44 @@ export default function LiveStats({
             <>
               <div className={styles.statItem}>
                 <div className={styles.statValue}>
+                  {stats.queue_length.toLocaleString()}
+                </div>
+                <div className={styles.statLabel}>Usuarios en total</div>
+              </div>
+              <div className={styles.statItem}>
+                <div className={styles.statValue}>
                   {formatWaitTime(stats.avg_wait_time_seconds)}
                 </div>
                 <div className={styles.statLabel}>Espera promedio</div>
               </div>
               <div className={styles.statItem}>
-                <div className={styles.statValue}>
-                  {stats.queue_length.toLocaleString()}
-                </div>
-                <div className={styles.statLabel}>Usuarios en total</div>
+                <div className={styles.statValue}>2 min</div>
+                <div className={styles.statLabel}>Tiempo de compra</div>
               </div>
+
+              <div className={styles.occupancyBar}>
+                <div className={styles.occupancyHeader}>
+                  <span className={styles.statLabel}>Ocupación del evento</span>
+                  <span className={styles.statValue}>
+                    {stats.occupancy_percentage ? stats.occupancy_percentage.toFixed(1) : "0.0"}%
+                  </span>
+                </div>
+                <div className={styles.occupancyTrack}>
+                  <div
+                    className={styles.occupancyFill}
+                    style={{
+                      width: `${Math.min(100, stats.occupancy_percentage || 0)}%`,
+                      backgroundColor:
+                        (stats.occupancy_percentage || 0) > 80
+                          ? "var(--color-danger)"
+                          : (stats.occupancy_percentage || 0) > 50
+                            ? "var(--color-warning)"
+                            : "var(--color-success)",
+                    }}
+                  />
+                </div>
+              </div>
+
               <div className={styles.statItem}>
                 <div className={styles.statValue} style={{ color: "#42A5F5" }}>
                   {dynamicStats.lastJump || stats.last_jump || 0}
