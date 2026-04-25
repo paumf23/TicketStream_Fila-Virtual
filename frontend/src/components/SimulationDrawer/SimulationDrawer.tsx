@@ -34,7 +34,7 @@ export default function SimulationDrawer({
     if (!id) {
       id = "sim-" + Math.random().toString(36).substring(2, 9);
       localStorage.setItem("vq_user_id", id);
-      // También necesitamos nombres básicos para que no falle el backend
+      // Se necesitan nombres básicos para que no falle el backend
       localStorage.setItem("vq_first_name", "Usuario");
       localStorage.setItem("vq_last_name", "Simulado");
     }
@@ -45,7 +45,7 @@ export default function SimulationDrawer({
 
   const handleLaunch = async () => {
     if (!selectedEvent) return;
-    
+
     setLoading(true);
     try {
       await advancedSimulate({

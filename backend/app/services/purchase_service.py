@@ -1,3 +1,7 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Lógica de negocio para compra de tickets
+# Proporciona métodos para iniciar, obtener y validar compras
+# ═══════════════════════════════════════════════════════════════════════════════       
 
 
 import logging
@@ -104,7 +108,7 @@ async def initiate_purchase(
 
     await db.commit()
 
-    # Registrar la salida de la cola (cleanup, no crítico)
+    
     try:
         active_record = await queue_history_repository.get_active_record(
             db, user_id, event_id
@@ -117,7 +121,7 @@ async def initiate_purchase(
     except Exception as e:
         logger.warning(f"No se pudo registrar la salida de cola para {user_id}: {e}")
 
-    # Remover la clave allowed AL FINAL (después de que todo lo demás terminó)
+    
     await redis_repository.remove_allowed(event_id, user_id)
 
     logger.info(f"Compra finalizada con éxito: Ticket {ticket.id} para usuario {user_id}")

@@ -1,3 +1,7 @@
+"""
+Este archivo define los endpoints de la API para la gestión de eventos, 
+permitiendo listar, crear, activar y consultar estadísticas de los eventos.
+"""
 
 
 from fastapi import APIRouter, Depends

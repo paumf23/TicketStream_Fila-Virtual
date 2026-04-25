@@ -31,7 +31,7 @@ export default function PurchaseForm({
   const [paymentProvider, setPaymentProvider] = useState("");
   const [quantity, setQuantity] = useState(1);
 
-  // Validation
+  // Validaciones de los campos 
   const [dniError, setDniError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [firstNameError, setFirstNameError] = useState("");
@@ -126,9 +126,8 @@ export default function PurchaseForm({
               <label className={styles.label}>Nombre</label>
               <input
                 type="text"
-                className={`${styles.input} ${
-                  firstNameError ? styles.inputError : ""
-                }`}
+                className={`${styles.input} ${firstNameError ? styles.inputError : ""
+                  }`}
                 value={firstName}
                 onChange={(e) => handleFirstNameChange(e.target.value)}
                 required
@@ -141,9 +140,8 @@ export default function PurchaseForm({
               <label className={styles.label}>Apellido</label>
               <input
                 type="text"
-                className={`${styles.input} ${
-                  lastNameError ? styles.inputError : ""
-                }`}
+                className={`${styles.input} ${lastNameError ? styles.inputError : ""
+                  }`}
                 value={lastName}
                 onChange={(e) => handleLastNameChange(e.target.value)}
                 required
@@ -158,9 +156,8 @@ export default function PurchaseForm({
               <label className={styles.label}>DNI</label>
               <input
                 type="text"
-                className={`${styles.input} ${
-                  dniError ? styles.inputError : ""
-                }`}
+                className={`${styles.input} ${dniError ? styles.inputError : ""
+                  }`}
                 placeholder="Ej: 40123456"
                 value={dni}
                 onChange={(e) => handleDniChange(e.target.value)}
@@ -174,9 +171,8 @@ export default function PurchaseForm({
               <label className={styles.label}>Email</label>
               <input
                 type="email"
-                className={`${styles.input} ${
-                  emailError ? styles.inputError : ""
-                }`}
+                className={`${styles.input} ${emailError ? styles.inputError : ""
+                  }`}
                 placeholder="Ej: juan@email.com"
                 value={email}
                 onChange={(e) => handleEmailChange(e.target.value)}
@@ -213,9 +209,8 @@ export default function PurchaseForm({
                   : "Seleccioná tu billetera"}
               </label>
               <select
-                className={`${styles.select} ${
-                  providerError ? styles.inputError : ""
-                }`}
+                className={`${styles.select} ${providerError ? styles.inputError : ""
+                  }`}
                 value={paymentProvider}
                 onChange={(e) => {
                   setPaymentProvider(e.target.value);

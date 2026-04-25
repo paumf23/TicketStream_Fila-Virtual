@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * page.tsx — Página de Confirmación de Ticket
+ * 
+ * Esta página se muestra después de que el usuario ha comprado un ticket y ha llegado al frente de la fila.
+ * Sus responsabilidades incluyen:
+ * 1. Cargar los detalles del ticket utilizando el ID proporcionado en la URL.
+ * 2. Renderizar el componente TicketConfirmation para mostrar la información del ticket y un mensaje de éxito.
+ * 3. Activar una animación de confeti (ConfettiCanvas) para celebrar la compra.
+ * 4. Proporcionar un enlace para volver a la página principal de eventos.
+ */
+
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";

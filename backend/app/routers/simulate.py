@@ -120,7 +120,7 @@ async def simulate_advanced(
     if body.include_me:
         total_simulated -= 1
     
-    # Calcular cuántos van antes de mí
+    # Calcular cuántos van antes del usuario
     target_pos = body.target_position or (total_simulated // 2)
     # No podemos estar en una posición mayor al total
     target_pos = min(target_pos, total_simulated + 1)
@@ -135,7 +135,7 @@ async def simulate_advanced(
         uid = f"sim-{uuid.uuid4().hex[:10]}"
         all_user_ids.append(uid)
     
-    # Yo
+    # usuario
     if body.include_me and body.user_id:
         all_user_ids.append(body.user_id)
     

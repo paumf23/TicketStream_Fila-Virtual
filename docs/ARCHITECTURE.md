@@ -97,5 +97,5 @@ Se optó por **Next.js standalone** (contenedor Docker propio) en lugar de stati
 
 1. **Operaciones Atómicas en Redis**: Uso de `LPUSH`, `LPOP`, `INCR` que son atómicas
 2. **Transacciones MySQL**: `BEGIN/COMMIT` para la compra de tickets
-3. **TTL en Permisos**: Usuario permitido tiene 5 minutos para comprar, luego expira
+3. **TTL en Permisos**: Usuario permitido tiene 2 minutos para comprar, luego expira
 4. **Verificación Doble**: Antes de confirmar compra, se verifica capacidad restante

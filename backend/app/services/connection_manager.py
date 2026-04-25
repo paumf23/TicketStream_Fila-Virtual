@@ -1,6 +1,12 @@
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# connection_manager.py — Gestor de Conexiones WebSocket
+# Gestor de Conexiones WebSocket en tiempo real
+#Registra y desconecta clientes organizándolos por event_id
+#Envía mensajes a todos los clientes suscritos a un evento específico
+#con send_personal y broadcast
+#Identifica y elimina conexiones que dejaron de funcionar
+#con get_connection_count y get_total_connections
+#Proporciona métricas sobre las conexiones activas
 # ═══════════════════════════════════════════════════════════════════════════════
 
 

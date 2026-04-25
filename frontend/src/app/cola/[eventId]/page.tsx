@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * page.tsx — Página de la Fila Virtual
+ * 
+ * Este archivo es el componente principal de la sala de espera. Sus funciones incluyen:
+ * 1. Gestionar la conexión WebSocket para recibir actualizaciones de posición y avisos de turno.
+ * 2. Visualizar el progreso del usuario mediante el túnel de partículas dinámico.
+ * 3. Mostrar estadísticas en tiempo real (LiveStats) y el panel de control de simulación (SimulationHUD).
+ * 4. Orquestar la transición hacia la compra de tickets cuando el usuario llega al frente.
+ */
+
+
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams, useParams, useRouter } from "next/navigation";
 import { getQueuePosition, getEventStats } from "@/lib/api";
@@ -32,7 +43,7 @@ export default function QueuePage() {
   const [stats, setStats] = useState<EventStats | null>(null);
   const [waitingBehind, setWaitingBehind] = useState(0);
 
-  // Forzar scroll al tope instantáneamente al entrar
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -47,7 +58,7 @@ export default function QueuePage() {
 
 
 
-  // Particle tunnel animation state
+  // Estado de la animación del túnel de partículas
   const [burst, setBurst] = useState(false);
   const [hyperspace, setHyperspace] = useState(false);
   const prevPositionRef = useRef<number | null>(null);
@@ -115,7 +126,6 @@ export default function QueuePage() {
     if (!lastMessage) return;
 
     if (lastMessage.type === "your_turn" && lastMessage.user_id === userId) {
-      // Activate hyperspace effect before showing the turn card
       setHyperspace(true);
       setTimeout(() => {
         setIsMyTurn(true);
@@ -126,9 +136,9 @@ export default function QueuePage() {
 
     if (lastMessage.type === "position_update") {
       fetchPosition();
-      
-      // Actualizar estadísticas en tiempo real — solo campos para SimulationHUD
-      // LiveStats maneja internamente sus propias métricas (simStats) via lastMessage
+
+
+      // Actualizar estadísticas de telemetría en tiempo real desde el mensaje del WebSocket
       const msg = lastMessage as any;
       setStats((prev) => {
         if (!prev) return prev;
@@ -142,14 +152,15 @@ export default function QueuePage() {
         };
       });
 
-      // Simulación normal: incrementar usuarios detrás (cosmético)
+      // Simulación normal: incrementar usuarios detrás 
       if (!isSimMode) {
         setWaitingBehind(prev => prev + Math.floor(Math.random() * 4) + 1);
       }
     }
   }, [lastMessage, userId, fetchPosition]);
 
-  // Trigger burst animation when position changes
+
+  // Disparar animación de choque (burst) cuando la posición en la fila mejora
   useEffect(() => {
     if (!position) return;
     const prevPos = prevPositionRef.current;
@@ -162,21 +173,21 @@ export default function QueuePage() {
     prevPositionRef.current = position.position;
   }, [position]);
 
-  // Track initial position (set once when first position arrives)
+  // Registrar la posición inicial para calcular el progreso visual (solo la primera vez)
   useEffect(() => {
     if (position && initialPositionRef.current === null) {
       initialPositionRef.current = position.position;
     }
   }, [position]);
 
-  // Calculate speed multiplier based on how far user has advanced from initial position
+  // Calcular el multiplicador de velocidad del túnel basado en cuánto ha avanzado el usuario
   const speedMultiplier = (() => {
     if (hyperspace) return 6;
     const initial = initialPositionRef.current;
     if (!position || !initial || initial <= 1) return 0.8;
-    // progress: 0 (just entered, at initial position) → 1 (position 1, about to be your turn)
+    // progreso: 0 (recién entra) → 1 (posición 1, casi es su turno)
     const progress = 1 - (position.position - 1) / (initial - 1);
-    // Exponential curve: speed ramps up noticeably as you approach the front
+    // Curva exponencial: la velocidad aumenta notablemente a medida que te acercas al frente
     // Range: 0.8 (far) → 3.5 (about to be your turn)
     return 0.8 + Math.pow(Math.max(0, progress), 1.5) * 2.7;
   })();
@@ -277,11 +288,11 @@ export default function QueuePage() {
 
         {/* Estadísticas del evento */}
         {stats && (
-          <LiveStats 
-            stats={stats} 
-            isSimMode={isSimMode} 
-            lastMessage={lastMessage} 
-            waitingBehind={waitingBehind} 
+          <LiveStats
+            stats={stats}
+            isSimMode={isSimMode}
+            lastMessage={lastMessage}
+            waitingBehind={waitingBehind}
             eventId={eventId}
           />
         )}

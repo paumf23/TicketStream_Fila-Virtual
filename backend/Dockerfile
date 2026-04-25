@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiamos el código del backend (asumiendo que el contexto es la carpeta backend/)
+# Se copia el código del backend (asumiendo que el contexto es la carpeta backend/)
 COPY . .
 
 EXPOSE 8000

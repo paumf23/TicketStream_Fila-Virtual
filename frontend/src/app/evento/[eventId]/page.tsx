@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * page.tsx — Página de Detalle del Evento
+ * 
+ * Esta página muestra la información principal del evento y el formulario para unirse a la fila virtual.
+ * Sus responsabilidades incluyen:
+ * 1. Cargar los datos del evento desde la API.
+ * 2. Renderizar el componente de cabecera (EventHero) con la imagen y título del evento.
+ * 3. Mostrar las tarjetas informativas (EventInfoCards) con la descripción, fecha, lugar y reglas.
+ * 4. Presentar el formulario de ingreso a la fila (EnterQueueForm), que gestiona la lógica de autenticación
+ *    y redirección a la sala de espera (cola).
+ */
+
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getEvent } from "@/lib/api";
@@ -55,7 +67,7 @@ export default function EventDetailPage() {
       <div className={styles.container}>
         <EventInfoCards event={event} />
 
-        <EnterQueueForm 
+        <EnterQueueForm
           eventId={eventId}
           eventStatus={event.status}
           onSuccess={() => router.push(`/cola/${eventId}`)}

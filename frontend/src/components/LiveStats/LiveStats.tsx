@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * LiveStats.tsx — Componente de Estadísticas en Tiempo Real
+ * 
+ * Este componente se encarga de mostrar las métricas del evento y de la cola.
+ * Tiene una doble función:
+ * 1. Para simulación normal (sin configuración): Muestra datos amigables como tiempo de espera y lugar en la fila.
+ * 2. Para simulación avanzada (con configuración): Muestra telemetría técnica avanzada (recaudación, carga, logs del sistema).
+ * 
+ * Recibe actualizaciones constantes vía WebSocket para mantener la interfaz sincronizada sin recargar.
+ */
+
+
 import React, { useState, useEffect, useRef } from "react";
 import type { EventStats, WsMessage } from "@/types";
 import styles from "./LiveStats.module.css";
@@ -19,14 +31,14 @@ export default function LiveStats({
   waitingBehind = 0,
   eventId
 }: LiveStatsProps) {
-  // Internal dynamic state for standard queue metrics (updated via WebSocket)
+  // Estado dinámico interno para métricas estándar de la cola (actualizado vía WebSocket)
   const [dynamicStats, setDynamicStats] = useState({
     lastJump: stats.last_jump || 0,
     // Usuarios en compra en esta sesión (los que les llegó el turno ahora)
     usersInPurchase: 0,
   });
 
-  // Simulation metrics (updated via WebSocket) — kept internal to this module
+  // Métricas avanzadas de simulación — mantenidas internas a este módulo
   const [simStats, setSimStats] = useState<EventStats>(stats);
   const [displayLogs, setDisplayLogs] = useState<string[]>([]);
   const initialStatsLoaded = useRef(false);
@@ -65,7 +77,7 @@ export default function LiveStats({
     }
   }, [simStats.tech_logs, isSimMode]);
 
-  // Sync initial stats when they arrive from the API (only first time)
+  // Sincronizar stats iniciales cuando llegan de la API (solo la primera vez)
   useEffect(() => {
     setDynamicStats((prev) => ({
       lastJump: prev.lastJump,
@@ -77,14 +89,16 @@ export default function LiveStats({
     }
   }, [stats]);
 
-  // Process WebSocket messages internally — this logic was previously in page.tsx
+  // Procesar mensajes del WebSocket internamente (lógica de telemetría)
   useEffect(() => {
     if (!lastMessage || lastMessage.type !== "position_update") return;
 
     const msg = lastMessage as any;
 
     if (isSimMode) {
-      // Simulation mode: update all simulation-specific metrics
+      // ═══════════════════════════════════════════════════════════════════════════
+      // BLOQUE: SIMULACIÓN AVANZADA (Telemetría Técnica)
+      // ═══════════════════════════════════════════════════════════════════════════
       setSimStats((prev) => {
         const usersProcessed = msg.users_processed || 0;
         const usersAbandoned = msg.users_abandoned || 0;
@@ -109,7 +123,10 @@ export default function LiveStats({
         };
       });
     } else {
-      // Standard queue: update the 3 dynamic metrics
+      // ═══════════════════════════════════════════════════════════════════════════
+      // BLOQUE: SIMULACIÓN NORMAL (Métricas de Usuario)
+      // ══════════════════════════════════════════════════════════════════════════
+
       const usersProcessed = msg.users_processed || 0;
 
       setDynamicStats((prev) => {
@@ -141,6 +158,9 @@ export default function LiveStats({
 
         <div className={styles.statsGrid}>
           {isSimMode ? (
+            /* ═════════════════════════════════════════════════════════════════════
+               UI: SIMULACIÓN AVANZADA
+               ═════════════════════════════════════════════════════════════════════ */
             <>
               <div className={styles.statItem}>
                 <div className={styles.statValue}>
@@ -205,6 +225,9 @@ export default function LiveStats({
               </div>
             </>
           ) : (
+            /* ═════════════════════════════════════════════════════════════════════
+               UI: SIMULACIÓN NORMAL
+               ═════════════════════════════════════════════════════════════════════ */
             <>
               <div className={styles.statItem}>
                 <div className={styles.statValue}>

@@ -1,9 +1,15 @@
-
+# ═══════════════════════════════════════════════════════════════════════════════
+# Este archivo es el motor de la simulación del sistema.
+# Funciona como un proceso en segundo plano que procesa la fila
+# virtual en tiempo real
+# ═══════════════════════════════════════════════════════════════════════════════
 
 import asyncio
 import json
 import logging
 import signal
+import random
+import time
 
 from app.config import settings
 from app.database import AsyncSessionLocal
@@ -20,18 +26,21 @@ def _handle_shutdown(signum, frame):
     _running = False
 
 
-import random
-import time
+
 
 async def process_event_queue(event_id: str, batch_size: int, interval: float, abandon_rate: float = 2.0) -> dict:
     start_time = time.time()
-    
-    # 1. Obtener configuración de simulación
+
+#===============================================================    
+# 1. CONFIGURACIÓN DE SIMULACIÓN
+#===============================================================    
     config = await redis_repository.get_event_config(event_id)
     speed = config["speed"]  # usuarios por minuto
     abandon_rate = config["abandon_rate"]  # 0-100
 
-    # 1. Calcular cuotas de salida proyectadas
+# ==============================================================    
+# 2. CUOTAS DE SALIDA PROYECTADAS
+# ==============================================================    
     queue_length = await redis_repository.queue_length(event_id)
     
     # Abandonos se calculan sobre el BATCH actual (lógica local)
@@ -48,7 +57,9 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
 
     logger.info(f"Evento {event_id}: Q_Len={queue_length}, Proc_Quota={processed_quota}, Aband_Quota={abandon_quota}")
 
-    # 2. Obtener el lote total (ahora incluye turnos y abandonos)
+# = =============================================================
+    # 3. PROCESAMIENTO DE LOTE (POP)
+# ==============================================================
     users = await redis_repository.queue_pop(
         event_id, batch_size=total_to_pop
     )
@@ -61,7 +72,7 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
 
         incoming = await redis_repository.get_incoming_count(event_id)
         await redis_repository.reset_incoming_count(event_id)
-        # Tendencia = Entraron - Salieron (en este caso 0 salieron)
+        # Tendencia = Entraron - Salieron
         trend = int((incoming / interval) * 60)
         return {"total": 0, "effort": 0, "jump": 0, "trend": trend}
 
@@ -111,7 +122,9 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
     # Ritmo de Ingreso por minuto
     incoming_rate = int((incoming / interval) * 60)
     
-    # 4. Calcular métricas finales
+# =================================================================
+# 4. MÉTRICAS FINALES
+# =================================================================
     execution_time = time.time() - start_time
     effort = min(100, round((execution_time / interval) * 100, 1))
     
@@ -134,7 +147,9 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
     total_revenue = current_revenue + new_revenue
     remaining_capacity = max(0, prev_remaining - saleable)
 
-    # 5. Guardar snapshot actualizado en Redis
+# ===============================================================
+# 5. ACTUALIZAR SNAPSHOT EN REDIS
+# ===============================================================
     stats_data = {
         "effort": effort,
         "last_jump": outgoing,
@@ -149,7 +164,9 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
     }
     await redis_repository.redis_pool.hset(f"event:{event_id}:stats", mapping=stats_data)
 
-    # Generar logs técnicos rotativos para evitar repetición
+# ===============================================================
+# 6. LOGS TÉCNICOS ROTATIVOS (DECORACIÓN)
+# ===============================================================
     tick_count = int(time.time())
     tech_logs = []
     
@@ -191,7 +208,7 @@ async def run_worker():
 
     while True:
         try:
-            # 1. Obtener eventos con simulación activa desde REDIS (Redis-only)
+            # 1. EVENTOS CON SIMULACIÓN ACTIVA
             sim_event_ids = await redis_repository.get_active_simulations()
             
             if not sim_event_ids:
@@ -200,7 +217,7 @@ async def run_worker():
                 continue
 
             for event_id in sim_event_ids:
-                # Obtener configuración de simulación desde Redis
+                # 2. CONFIGURACIÓN DE SIMULACIÓN POR EVENTO
                 config = await redis_repository.get_event_config(event_id)
                 if not config:
                     continue
@@ -220,7 +237,7 @@ async def run_worker():
                 abandon_rate = config.get("abandon_rate", 2.0)
                 interval = settings.PROCESS_INTERVAL
 
-                # Procesar la cola (Redis-only)
+                # 3. PROCESAMIENTO DE LA COLA (REDIS-ONLY)
                 result = await process_event_queue(
                     event_id=event_id,
                     batch_size=batch_size,

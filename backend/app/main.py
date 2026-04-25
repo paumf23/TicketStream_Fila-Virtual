@@ -1,3 +1,10 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Punto de entrada de la API
+# Controla el inicio y cierre de la aplicación, asegurando la conexión a Redis y MySQL
+# Configura la instancia de la app y registra los routers
+# Centraliza todos los módulos de la API, conectando los endpoints de eventos,
+# colas, tickets, simulación y websockets en una sola interfaz  
+# ═══════════════════════════════════════════════════════════════════════════════
 
 
 

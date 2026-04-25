@@ -1,6 +1,6 @@
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# exceptions.py — Jerarquía de Excepciones del Dominio
+# Jerarquía de Excepciones del Dominio
 # ═══════════════════════════════════════════════════════════════════════════════
 # Todas las excepciones de negocio heredan de VirtualQueueError.
 # El handler global en middleware/error_handler.py las captura y convierte

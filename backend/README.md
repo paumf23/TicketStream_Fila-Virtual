@@ -127,6 +127,18 @@ docker compose exec api python -m pytest tests/ -v
 docker compose exec api ruff check app/
 ```
 
+### Tests de Carga (Load Testing)
+
+Para ejecutar las simulaciones de estrés con **k6** y visualizar las métricas en **Grafana**, usá el siguiente comando que combina la infraestructura base con el stack de testing:
+
+```bash
+# Levantar el stack completo de testing (API + InfluxDB + Grafana + k6)
+docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
+```
+
+*   **Grafana:** Disponible en `http://localhost:3001` (login: `admin` / `admin`).
+*   **Dashboards:** Incluye un tablero preconfigurado para ver latencia y usuarios de k6 en tiempo real.
+
 ### Desarrollo local (sin Docker)
 
 Si necesitás correr los tests sin Docker, ajustar los defaults en `.env`:

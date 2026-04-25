@@ -1,10 +1,15 @@
-
-
+"""
+Repositorio para la gestión de datos en Redis: operaciones de cola, 
+configuración de eventos y métricas de simulación en tiempo real.
+"""
 
 import redis.asyncio as aioredis
 
 from app.redis import redis_pool
 
+
+# --- Helpers y Utilidades Internas ---
+# Funciones internas para la generación de llaves y gestión de estados auxiliares de Redis.
 
 def _queue_key(event_id: str) -> str:
     return f"queue:{event_id}"
@@ -18,17 +23,16 @@ def _channel_key(event_id: str) -> str:
     return f"channel:queue:{event_id}"
 
 
-async def queue_push(event_id: str, user_id: str) -> int:
-    position = await redis_pool.rpush(_queue_key(event_id), user_id)
-    await increment_incoming_count(event_id, 1)
-    await _update_peak_queue_length(event_id, position)
-    # Activar el Worker automáticamente para este evento
-    await add_active_simulation(event_id)
-    return position
-
-
 def _peak_queue_key(event_id: str) -> str:
     return f"peak_queue:{event_id}"
+
+
+def _user_name_key(user_id: str) -> str:
+    return f"user_name:{user_id}"
+
+
+def _event_config_key(event_id: str) -> str:
+    return f"event_config:{event_id}"
 
 
 async def _update_peak_queue_length(event_id: str, current_length: int) -> None:
@@ -38,9 +42,36 @@ async def _update_peak_queue_length(event_id: str, current_length: int) -> None:
         await redis_pool.set(key, str(current_length))
 
 
-async def get_peak_queue_length(event_id: str) -> int:
-    result = await redis_pool.get(_peak_queue_key(event_id))
-    return int(result) if result is not None else 0
+# --- Operaciones de Cola ---
+# Métodos para gestionar el flujo de usuarios, posiciones y estados de la fila virtual.
+
+async def queue_push(event_id: str, user_id: str) -> int:
+    position = await redis_pool.rpush(_queue_key(event_id), user_id)
+    await increment_incoming_count(event_id, 1)
+    await _update_peak_queue_length(event_id, position)
+    # Activar el Worker automáticamente para este evento
+    await add_active_simulation(event_id)
+    return position
+
+
+async def bulk_push(event_id: str, user_ids: list[str]) -> None:
+    if not user_ids:
+        return
+    
+    key = _queue_key(event_id)
+    async with redis_pool.pipeline(transaction=True) as pipe:
+        for i in range(0, len(user_ids), 100):
+            chunk = user_ids[i : i + 100]
+            pipe.rpush(key, *chunk)
+        pipe.llen(key)
+        results = await pipe.execute()
+        
+        # El último resultado es el tamaño total de la cola
+        new_length = results[-1]
+        await _update_peak_queue_length(event_id, new_length)
+    await increment_incoming_count(event_id, len(user_ids))
+    # Activar el Worker automáticamente para este evento
+    await add_active_simulation(event_id)
 
 
 async def queue_pop(event_id: str, batch_size: int = 10) -> list[str]:
@@ -62,86 +93,25 @@ async def queue_length(event_id: str) -> int:
     return await redis_pool.llen(_queue_key(event_id))
 
 
-async def remove_queue_entry(event_id: str, user_id: str) -> None:
-    key = f"event:{event_id}:queue"
-    await redis_pool.lrem(key, 0, user_id)
-
-# --- Gestión de Simulación (Redis-Only) ---
-
-async def add_active_simulation(event_id: str) -> None:
-    await redis_pool.sadd("sim:active_events", event_id)
-
-async def remove_active_simulation(event_id: str) -> None:
-    await redis_pool.srem("sim:active_events", event_id)
-
-async def get_active_simulations() -> list[str]:
-    events = await redis_pool.smembers("sim:active_events")
-    return [e.decode("utf-8") if isinstance(e, bytes) else e for e in events]
-
-
 async def queue_remove(event_id: str, user_id: str) -> bool:
     removed = await redis_pool.lrem(_queue_key(event_id), 1, user_id)
     return removed > 0
 
 
-async def set_allowed(event_id: str, user_id: str, ttl_seconds: int = 300) -> None:
-    key = _allowed_key(event_id, user_id)
-    await redis_pool.set(key, "1", ex=ttl_seconds)
+async def remove_queue_entry(event_id: str, user_id: str) -> None:
+    key = f"event:{event_id}:queue"
+    await redis_pool.lrem(key, 0, user_id)
 
 
-async def is_allowed(event_id: str, user_id: str) -> bool:
-    result = await redis_pool.get(_allowed_key(event_id, user_id))
-    return result is not None
+async def clear_queue(event_id: str) -> None:
+    await redis_pool.delete(_queue_key(event_id))
+    await redis_pool.delete(f"event:{event_id}:abandoned")
+    await redis_pool.delete(f"event:{event_id}:processed")
+    await redis_pool.delete(f"event:{event_id}:incoming")
 
 
-async def remove_allowed(event_id: str, user_id: str) -> None:
-    await redis_pool.delete(_allowed_key(event_id, user_id))
-
-
-
-async def publish(event_id: str, message: str) -> int:
-    return await redis_pool.publish(_channel_key(event_id), message)
-
-
-async def subscribe(event_id: str) -> aioredis.client.PubSub:
-
-    pubsub = redis_pool.pubsub()
-    await pubsub.subscribe(_channel_key(event_id))
-    return pubsub
-
-
-def _user_name_key(user_id: str) -> str:
-
-    return f"user_name:{user_id}"
-
-
-async def set_user_name(
-    user_id: str, first_name: str, last_name: str
-) -> None:
-
-    key = _user_name_key(user_id)
-    await redis_pool.hset(key, mapping={
-        "first_name": first_name,
-        "last_name": last_name,
-    })
-    await redis_pool.expire(key, 3600)
-
-
-async def get_user_name(user_id: str) -> dict | None:
-
-    key = _user_name_key(user_id)
-    data = await redis_pool.hgetall(key)
-    if not data:
-        return None
-    return {
-        "first_name": data.get("first_name", ""),
-        "last_name": data.get("last_name", ""),
-    }
-
-
-def _event_config_key(event_id: str) -> str:
-    return f"event_config:{event_id}"
-
+# --- Configuración y Métricas de Simulación ---
+# Gestión de parámetros de simulación y contadores estadísticos de flujo de usuarios.
 
 async def set_event_config(
     event_id: str, speed: int, abandon_rate: float
@@ -153,8 +123,24 @@ async def set_event_config(
         mapping={"speed": speed, "abandon_rate": abandon_rate}
     )
 
+
+async def get_event_config(event_id: str) -> dict:
+    key = _event_config_key(event_id)
+    data = await redis_pool.hgetall(key)
+    return {
+        "speed": int(data.get("speed") or 360),
+        "abandon_rate": float(data.get("abandon_rate") or 1.5),
+    }
+
+
+async def get_peak_queue_length(event_id: str) -> int:
+    result = await redis_pool.get(_peak_queue_key(event_id))
+    return int(result) if result is not None else 0
+
+
 async def increment_abandoned_count(event_id: str, count: int = 1) -> None:
     await redis_pool.incrby(f"event:{event_id}:abandoned", count)
+
 
 async def get_abandoned_count(event_id: str) -> int:
     val = await redis_pool.get(f"event:{event_id}:abandoned")
@@ -183,37 +169,69 @@ async def reset_incoming_count(event_id: str) -> None:
     await redis_pool.delete(f"event:{event_id}:incoming")
 
 
-async def get_event_config(event_id: str) -> dict:
-    key = _event_config_key(event_id)
+# --- Control de Acceso y Permisos ---
+# Funciones para autorizar y verificar el paso de usuarios hacia la sección de compra.
+
+async def set_allowed(event_id: str, user_id: str, ttl_seconds: int = 300) -> None:
+    key = _allowed_key(event_id, user_id)
+    await redis_pool.set(key, "1", ex=ttl_seconds)
+
+
+async def is_allowed(event_id: str, user_id: str) -> bool:
+    result = await redis_pool.get(_allowed_key(event_id, user_id))
+    return result is not None
+
+
+async def remove_allowed(event_id: str, user_id: str) -> None:
+    await redis_pool.delete(_allowed_key(event_id, user_id))
+
+
+# --- Gestión de Simulación Activa y Mensajería ---
+# Orquestación de eventos activos y publicación de mensajes en tiempo real mediante Pub/Sub.
+
+async def add_active_simulation(event_id: str) -> None:
+    await redis_pool.sadd("sim:active_events", event_id)
+
+
+async def remove_active_simulation(event_id: str) -> None:
+    await redis_pool.srem("sim:active_events", event_id)
+
+
+async def get_active_simulations() -> list[str]:
+    events = await redis_pool.smembers("sim:active_events")
+    return [e.decode("utf-8") if isinstance(e, bytes) else e for e in events]
+
+
+async def publish(event_id: str, message: str) -> int:
+    return await redis_pool.publish(_channel_key(event_id), message)
+
+
+async def subscribe(event_id: str) -> aioredis.client.PubSub:
+    pubsub = redis_pool.pubsub()
+    await pubsub.subscribe(_channel_key(event_id))
+    return pubsub
+
+
+# --- Información del Usuario ---
+# Almacenamiento temporal y recuperación de datos descriptivos de los participantes.
+
+async def set_user_name(
+    user_id: str, first_name: str, last_name: str
+) -> None:
+    key = _user_name_key(user_id)
+    await redis_pool.hset(key, mapping={
+        "first_name": first_name,
+        "last_name": last_name,
+    })
+    await redis_pool.expire(key, 3600)
+
+
+async def get_user_name(user_id: str) -> dict | None:
+    key = _user_name_key(user_id)
     data = await redis_pool.hgetall(key)
+    if not data:
+        return None
     return {
-        "speed": int(data.get("speed") or 360),
-        "abandon_rate": float(data.get("abandon_rate") or 1.5),
+        "first_name": data.get("first_name", ""),
+        "last_name": data.get("last_name", ""),
     }
-
-
-async def clear_queue(event_id: str) -> None:
-    await redis_pool.delete(_queue_key(event_id))
-    await redis_pool.delete(f"event:{event_id}:abandoned")
-    await redis_pool.delete(f"event:{event_id}:processed")
-    await redis_pool.delete(f"event:{event_id}:incoming")
-
-
-async def bulk_push(event_id: str, user_ids: list[str]) -> None:
-    if not user_ids:
-        return
-    
-    key = _queue_key(event_id)
-    async with redis_pool.pipeline(transaction=True) as pipe:
-        for i in range(0, len(user_ids), 100):
-            chunk = user_ids[i : i + 100]
-            pipe.rpush(key, *chunk)
-        pipe.llen(key)
-        results = await pipe.execute()
-        
-        # El último resultado es el tamaño total de la cola
-        new_length = results[-1]
-        await _update_peak_queue_length(event_id, new_length)
-    await increment_incoming_count(event_id, len(user_ids))
-    # Activar el Worker automáticamente para este evento
-    await add_active_simulation(event_id)

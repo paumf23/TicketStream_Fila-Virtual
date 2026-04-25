@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * EventHero.tsx — Cabecera del Evento
+ * 
+ * Este componente muestra la información principal del evento en la parte superior de la página de detalle.
+ * Incluye:
+ * - Imagen del evento con efecto de desenfoque en el fondo.
+ * - Título del evento y calificación (si está disponible).
+ * - Descripción corta del evento.
+ * - Enlace para volver a la lista de eventos.
+ */
+
 import React from "react";
 import Link from "next/link";
 import type { Event } from "@/types";
@@ -13,8 +24,8 @@ export default function EventHero({ event }: EventHeroProps) {
   return (
     <section className={styles.hero}>
       {/* Fondo desenfocado */}
-      <div 
-        className={styles.heroBackground} 
+      <div
+        className={styles.heroBackground}
         style={{ backgroundImage: `url("${event.image_url || ""}")` }}
       />
       <div className={styles.heroOverlay} />

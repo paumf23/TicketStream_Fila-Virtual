@@ -1,4 +1,7 @@
-
+# ═══════════════════════════════════════════════════════════════════════════════
+# Lógica de negocio para la cola
+# Proporciona métodos para entrar, salir y obtener la posición en la cola
+# ═══════════════════════════════════════════════════════════════════════════════   
 
 
 
@@ -98,9 +101,9 @@ async def get_position(
 
     total = await redis_repository.queue_length(event_id)
 
-    # Obtener velocidad configurada para estimación dinámica
+   
     config = await redis_repository.get_event_config(event_id)
-    speed = config.get("speed", 60) # 60 u/min por defecto
+    speed = config.get("speed", 60)
 
     return {
         "user_id": user_id,

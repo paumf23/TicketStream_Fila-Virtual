@@ -2,6 +2,10 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # websocket_handler.py — Endpoint WebSocket para Actualizaciones en Tiempo Real
 # ═══════════════════════════════════════════════════════════════════════════════
+"""
+Este archivo gestiona el ciclo de vida de las conexiones WebSocket, permitiendo la 
+comunicación bidireccional y la transmisión de eventos en tiempo real a los clientes.
+"""
 
 
 import asyncio

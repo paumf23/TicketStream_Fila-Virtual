@@ -11,12 +11,16 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     CORS_ORIGINS: str = "http://localhost:3000"
 
-    # --- Worker (Procesador de Cola) ---
+# ===============================================================
+# Worker (Procesador de Cola)   
+# ===============================================================
     BATCH_SIZE: int = 10
     PROCESS_INTERVAL: int = 1
     ALLOWED_TTL: int = 120
 
-    # --- Reconexión WebSocket ---
+# ===============================================================
+# Reconexión WebSocket
+# ===============================================================
     RECONNECT_GRACE_PERIOD: int = 30
 
     model_config = SettingsConfigDict(

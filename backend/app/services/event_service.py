@@ -1,3 +1,11 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Servicio de Eventos
+#Gestiona la lógica de negocio de los eventos
+#Proporciona métodos para obtener, crear, actualizar y eliminar eventos
+#Proporciona métodos para obtener estadísticas de los eventos
+# ═══════════════════════════════════════════════════════════════════════════════   
+
+
 
 from datetime import datetime
 
@@ -199,9 +207,7 @@ async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
     incoming_rate = int(last_stats.get("incoming_rate", 0))
     processed_rate = int(last_stats.get("processed_rate", 0))
     
-    # Flujo total de salida (throughput) es el last_jump (processed + abandoned) en el último tick
-    # Opcionalmente, promediado por minuto si last_stats.get("throughput") estuviera guardado.
-    # Por ahora usamos el valor que el worker ya calcula como saldo neto de salida.
+
     throughput = last_jump
 
     tickets_sold = event.total_capacity - event.remaining_capacity

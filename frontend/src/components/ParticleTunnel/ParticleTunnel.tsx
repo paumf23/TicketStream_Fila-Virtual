@@ -1,18 +1,28 @@
 "use client";
 
+/**
+ * ParticleTunnel.tsx — Animación Visual de la Cola (Túnel de Partículas)
+ * 
+ * Este componente renderiza un canvas con una animación de estilo "túnel hiperespacial".
+ * Reacciona dinámicamente a la posición del usuario en la fila:
+ * 1. La velocidad base aumenta a medida que el usuario avanza.
+ * 2. El efecto 'burst' se dispara cuando hay un salto de posición.
+ * 3. El efecto 'hyperspace' se activa cuando es el turno del usuario para comprar.
+ */
+
 import { useRef, useEffect, useCallback } from "react";
 import styles from "./ParticleTunnel.module.css";
 
 interface ParticleTunnelProps {
-  /** Base speed multiplier: 0.3 = slow, 1 = normal, 5 = hyperspace */
+  /** Multiplicador de velocidad base: 0.3 = lento, 1 = normal, 5 = hiperspacio */
   speedMultiplier: number;
-  /** Brief acceleration burst (e.g. on position change) */
+  /** Breve ráfaga de aceleración (ej. al cambiar de posición) */
   burst: boolean;
-  /** Full hyperspace effect (es tu turno) */
+  /** Efecto de hiperspacio completo (cuando es tu turno) */
   hyperspace: boolean;
 }
 
-// ── Particle data structure ──
+// ── Estructura de datos de la partícula ──
 interface Particle {
   angle: number;
   distance: number;
@@ -26,7 +36,7 @@ interface Particle {
 const PARTICLE_COUNT = 140;
 const BASE_SPEED = 2.0;
 
-// Colors matching the project palette
+// Colores que coinciden con la paleta del proyecto
 const PRIMARY_HUE = 252;    // #6C5CE7
 const SECONDARY_HUE = 177;  // #00CEC9
 
@@ -65,21 +75,21 @@ export default function ParticleTunnel({
   const burstEndRef = useRef(0);
   const hyperspaceFlashRef = useRef(0);
 
-  // Track burst activation
+  // Rastrear la activación de la ráfaga (burst)
   useEffect(() => {
     if (burst) {
       burstEndRef.current = performance.now() + 1200;
     }
   }, [burst]);
 
-  // Track hyperspace activation — trigger flash
+  // Rastrear activación de hiperspacio — dispara destello visual
   useEffect(() => {
     if (hyperspace) {
       hyperspaceFlashRef.current = performance.now() + 600;
     }
   }, [hyperspace]);
 
-  // Animation loop
+  // Bucle de animación (loop)
   const animate = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -93,7 +103,7 @@ export default function ParticleTunnel({
     const cy = h / 2;
     const maxRadius = Math.sqrt(cx * cx + cy * cy);
 
-    // Initialize particles on first run
+    // Inicializar partículas en la primera ejecución
     if (particlesRef.current.length === 0) {
       particlesRef.current = Array.from({ length: PARTICLE_COUNT }, () =>
         createParticle(maxRadius, true)
@@ -103,7 +113,7 @@ export default function ParticleTunnel({
     const particles = particlesRef.current;
     const now = performance.now();
 
-    // ── Determine target speed ──
+    // ── Determinar la velocidad objetivo ──
     let targetSpeed = speedMultiplier;
     if (hyperspace) {
       targetSpeed = 6;
@@ -111,18 +121,18 @@ export default function ParticleTunnel({
       targetSpeed = Math.max(speedMultiplier, 4.0);
     }
 
-    // Smooth lerp toward target speed
+    // Interpolación suave (lerp) hacia la velocidad objetivo
     const lerpFactor = hyperspace ? 0.1 : 0.05;
     currentSpeedRef.current +=
       (targetSpeed - currentSpeedRef.current) * lerpFactor;
     const speed = currentSpeedRef.current;
 
-    // ── Clear with fade trail — shorter = longer streaks visible ──
+    // ── Limpiar con rastro de desvanecimiento (trail) ──
     const fadeAlpha = hyperspace ? 0.04 : 0.08;
     ctx.fillStyle = `rgba(15, 15, 26, ${fadeAlpha})`;
     ctx.fillRect(0, 0, w, h);
 
-    // ── Hyperspace flash overlay ──
+    // ── Superposición de destello de hiperspacio ──
     if (now < hyperspaceFlashRef.current) {
       const flashProgress = 1 - (hyperspaceFlashRef.current - now) / 600;
       const flashAlpha = Math.sin(flashProgress * Math.PI) * 0.25;
@@ -130,41 +140,41 @@ export default function ParticleTunnel({
       ctx.fillRect(0, 0, w, h);
     }
 
-    // ── Update & draw particles ──
+    // ── Actualizar y dibujar partículas ──
     for (const p of particles) {
-      // Accelerate outward — particles near edges move much faster
+      // Acelerar hacia afuera — las partículas cerca de los bordes se mueven más rápido
       const depthRatio = p.distance / maxRadius;
       const moveAmount =
         BASE_SPEED * speed * p.speed * (0.8 + depthRatio * 2.5);
       p.distance += moveAmount;
 
-      // Recycle if out of bounds
+      // Reciclar la partícula si sale de los límites del canvas
       if (p.distance > maxRadius) {
         resetParticle(p);
         continue;
       }
 
-      // Cartesian position
+      // Posición cartesiana final
       const x = cx + Math.cos(p.angle) * p.distance;
       const y = cy + Math.sin(p.angle) * p.distance;
 
-      // Streak length: grows with distance and speed
+      // Largo de la estela: crece con la distancia y la velocidad actual
       const streakMultiplier = hyperspace ? 6.0 : 1.8;
       const streakLength =
         moveAmount * (5 + depthRatio * 18) * p.length * streakMultiplier;
       const xTail = x - Math.cos(p.angle) * streakLength;
       const yTail = y - Math.sin(p.angle) * streakLength;
 
-      // Opacity increases with distance from center
+      // La opacidad aumenta gradualmente con la distancia del centro
       const alpha = p.opacity * (0.1 + depthRatio * 0.9);
 
-      // Color: brighter in hyperspace
+      // Color: los tonos son más brillantes durante el hiperspacio
       const lightness = hyperspace
         ? 70 + depthRatio * 28
         : 55 + depthRatio * 20;
       const saturation = hyperspace ? 85 : 70;
 
-      // Line width: thicker at edges
+      // Ancho de línea: se vuelve ligeramente más grueso en los bordes
       const lineWidth = p.width * (0.4 + depthRatio * 1.8);
 
       ctx.beginPath();
@@ -176,7 +186,7 @@ export default function ParticleTunnel({
       ctx.stroke();
     }
 
-    // ── Central glow ──
+    // ── Resplandor central ──
     const glowRadius = hyperspace ? 150 : 80;
     const glowAlpha = hyperspace ? 0.2 : 0.06;
     const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
@@ -196,7 +206,7 @@ export default function ParticleTunnel({
     animFrameRef.current = requestAnimationFrame(animate);
   }, [speedMultiplier, hyperspace]);
 
-  // Handle canvas resize
+  // Manejar el redimensionamiento del canvas al cambiar el tamaño de la ventana
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -211,7 +221,7 @@ export default function ParticleTunnel({
     return () => window.removeEventListener("resize", resize);
   }, []);
 
-  // Start / stop animation loop
+  // Iniciar / detener el bucle de animación principal
   useEffect(() => {
     animFrameRef.current = requestAnimationFrame(animate);
     return () => {
