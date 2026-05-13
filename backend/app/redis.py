@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # Configuración y conexión con la base de datos Redis
 # Se crea pool de conexiones para manejar las operaciones asíncronas con Redis
-# Se utiliza aioredis para operaciones asíncronas
+# Se utiliza redis.asyncio (módulo async de redis-py 5.x, importado como aioredis)
 # Con get_redis() los módulos del backend obtienen la instancia de Redis para
 # guardar o recuperar datos (como la fila de espera o métricas en tiempo real   )
 # ═══════════════════════════════════════════════════════════════════════════════

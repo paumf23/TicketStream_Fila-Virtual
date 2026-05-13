@@ -20,12 +20,16 @@ async def test_nonexistent_route_returns_404(client):
 
 
 @pytest.mark.anyio
-async def test_events_list_requires_db(client):
+async def test_events_list_returns_valid_response(client):
+    """Verifica que el listado de eventos responde correctamente con la DB disponible."""
     response = await client.get("/api/events/")
-    assert response.status_code == 500
+    assert response.status_code == 200
+
     data = response.json()
-    assert "detail" in data
-    assert data["error_type"] == "InternalServerError"
+    assert "events" in data
+    assert "total" in data
+    assert isinstance(data["events"], list)
+    assert data["total"] >= 0
 
 
 @pytest.mark.anyio
