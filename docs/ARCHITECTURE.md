@@ -95,7 +95,7 @@ Se optó por **Next.js standalone** (contenedor Docker propio) en lugar de stati
 
 ### Manejo de Race Conditions
 
-1. **Operaciones Atómicas en Redis**: Uso de `LPUSH`, `LPOP`, `INCR` que son atómicas
+1. **Patrón Reliable Queue (Redis)**: Uso de scripts Lua para movimiento atómico de la cola a lista de procesamiento (idempotencia).
 2. **Transacciones MySQL**: `BEGIN/COMMIT` para la compra de tickets
-3. **TTL en Permisos**: Usuario permitido tiene 2 minutos para comprar, luego expira
+3. **TTL en Permisos**: Usuario permitido tiene 5 minutos para comprar, luego expira
 4. **Verificación Doble**: Antes de confirmar compra, se verifica capacidad restante

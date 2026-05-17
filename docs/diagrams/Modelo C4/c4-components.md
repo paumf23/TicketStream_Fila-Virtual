@@ -74,7 +74,7 @@ C4Component
 
 | Componente | Operaciones |
 |------------|-------------|
-| **Redis Repository** | `lpush()`, `lpop()`, `llen()`, `hset()`, `hget()`, `hdel()`, `publish()` |
+| **Redis Repository** | `lpush()`, `queue_pop_safe()` (Lua), `llen()`, `hset()`, `hget()`, `hdel()`, `publish()` |
 | **MySQL Repository** | `insert_ticket()`, `insert_buyer()`, `insert_payment()`, `get_event()`, `update_capacity()` |
 
 ---
@@ -138,8 +138,9 @@ C4Component
     ContainerDb_Ext(redis, "Redis", "In-memory store")
 
     Rel(scheduler, batchProcessor, "Dispara cada segundo")
-    Rel(batchProcessor, redisClient, "LPOP waiting_queue")
+    Rel(batchProcessor, redisClient, "EVAL queue_pop_safe (Atómico)")
     Rel(batchProcessor, redisClient, "HSET allowed_users + TTL")
+    Rel(batchProcessor, redisClient, "DEL processing (Cleanup)")
     Rel(batchProcessor, notifier, "Usuarios movidos")
     Rel(notifier, redisClient, "PUBLISH position_updates")
     Rel(redisClient, redis, "Redis Protocol")
@@ -151,13 +152,15 @@ C4Component
 # Pseudocódigo del Worker
 async def process_batch():
     while True:
-        # 1. Sacar 10 usuarios de la cola
-        users = await redis.lpop("waiting_queue", count=10)
+        # 1. Mover lote de la cola a lista de procesamiento (atómico via Lua)
+        users = await redis_repo.queue_pop_safe(event_id, batch_size=10)
         
         for user_id in users:
             # 2. Agregar a permitidos con TTL de 5 minutos
-            await redis.hset("allowed_users", user_id, timestamp)
-            await redis.expire(f"allowed:{user_id}", 300)
+            await redis_repo.set_allowed(event_id, user_id, ttl=300)
+        
+        # 3. Limpiar lista de procesamiento (batch exitoso)
+        await redis_repo.clear_processing(event_id)
         
         # 3. Notificar a todos los conectados
         await redis.publish("position_updates", json.dumps({

@@ -29,7 +29,7 @@ C4Container
     Rel(api, redis, "Lee/escribe cola y permisos", "Redis Protocol")
     Rel(api, mysql, "Persiste compras, lee eventos", "MySQL Protocol")
     
-    Rel(worker, redis, "LPOP usuarios, SET permisos", "Redis Protocol")
+    Rel(worker, redis, "Mueve usuarios (atómico), SET permisos", "Redis Protocol")
     Rel(worker, redis, "Publica actualizaciones", "Redis Pub/Sub")
 ```
 
@@ -60,7 +60,7 @@ C4Container
 5. Browser → API: Conectar WebSocket :8000/ws
 
 [Cada 1 segundo]
-6. Worker → Redis: LPOP waiting_queue (x10)
+6. Worker → Redis: Mueve usuarios de cola a processing (atómico via Lua)
 7. Worker → Redis: HSET allowed_users {user_id} (TTL 5min)
 8. Worker → Redis: PUBLISH position_updates {...}
 9. Redis → API (WS server): Recibe mensaje

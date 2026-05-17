@@ -10,7 +10,7 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_db
+from app.dependencies import get_db, rate_limit
 from app.exceptions import BadRequestError, NotFoundError
 from app.repositories import event_repository, redis_repository
 from app.schemas.responses import SimulateLoadResponse
@@ -39,7 +39,7 @@ LAST_NAMES = [
 router = APIRouter()
 
 
-@router.post("/load", status_code=201, response_model=SimulateLoadResponse)
+@router.post("/load", status_code=201, response_model=SimulateLoadResponse, dependencies=[Depends(rate_limit(limit=2, window=60))])
 async def simulate_load(
     body: SimulateLoadRequest,
     db: AsyncSession = Depends(get_db),
@@ -82,7 +82,7 @@ async def simulate_load(
     }
 
 
-@router.post("/advanced", status_code=201)
+@router.post("/advanced", status_code=201, dependencies=[Depends(rate_limit(limit=2, window=60))])
 async def simulate_advanced(
     body: AdvancedSimulateRequest,
     db: AsyncSession = Depends(get_db),

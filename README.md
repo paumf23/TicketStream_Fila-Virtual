@@ -35,7 +35,7 @@ Cuando un evento popular pone a la venta sus entradas, miles de usuarios intenta
 - ⚡ **Actualizaciones en vivo** — WebSocket bidireccional para notificaciones instantáneas.
 - 🔒 **Transacciones atómicas** — Sin sobreventa gracias a operaciones atómicas en Redis + transacciones MySQL.
 - 📊 **Motor de simulación** — Inyección de usuarios ficticios para pruebas de carga desde la UI, con modo de simulación avanzada configurable por el usuario.
-- 🏗️ **Arquitectura Event-Driven** — Worker independiente que procesa la fila en segundo plano.
+- 🏗️ **Arquitectura Event-Driven & Resiliente** — Worker independiente con patrón **Reliable Queue** (Lua atómico) que evita pérdida de datos durante el procesamiento.
 - 📈 **Monitoreo integrado** — Dashboard Grafana con métricas k6 en tiempo real para pruebas de carga.
 - 🐳 **Completamente contenerizado** — Un solo comando para levantar toda la infraestructura.
 

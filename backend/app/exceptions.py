@@ -41,3 +41,8 @@ class BadRequestError(VirtualQueueError):
 class ValidationError(VirtualQueueError):
     """Error de validación de datos de entrada (422)."""
     status_code = 422
+
+
+class RateLimitError(VirtualQueueError):
+    """Límite de peticiones excedido (429)."""
+    status_code = 429

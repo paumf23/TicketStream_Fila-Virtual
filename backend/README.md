@@ -47,7 +47,7 @@ El **Worker** es un proceso independiente que corre en su propio contenedor Dock
 ### ¿Cómo funciona?
 
 1. **Cada segundo** (configurable con `PROCESS_INTERVAL`), el worker revisa si hay simulaciones activas en Redis.
-2. Para cada evento activo, **extrae un lote de usuarios** de la fila (tamaño basado en la velocidad configurada).
+2. Para cada evento activo, **mueve un lote de usuarios** de la cola a una lista de procesamiento (atómico vía Lua) siguiendo el **Patrón Reliable Queue** para garantizar que ningún usuario se pierda si el Worker falla.
 3. A cada usuario procesado le otorga un **permiso temporal** (TTL) para comprar.
 4. Los usuarios simulados pueden **abandonar la fila** según la tasa de abandono configurada.
 5. **Publica los resultados** por WebSocket (vía Redis Pub/Sub), actualizando la interfaz en tiempo real.

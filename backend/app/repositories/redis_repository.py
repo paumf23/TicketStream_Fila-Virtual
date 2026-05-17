@@ -35,6 +35,10 @@ def _event_config_key(event_id: str) -> str:
     return f"event_config:{event_id}"
 
 
+def _processing_key(event_id: str) -> str:
+    return f"processing:{event_id}"
+
+
 async def _update_peak_queue_length(event_id: str, current_length: int) -> None:
     key = _peak_queue_key(event_id)
     current_peak = await redis_pool.get(key)
@@ -74,14 +78,67 @@ async def bulk_push(event_id: str, user_ids: list[str]) -> None:
     await add_active_simulation(event_id)
 
 
-async def queue_pop(event_id: str, batch_size: int = 10) -> list[str]:
-    users = []
-    for _ in range(batch_size):
-        user_id = await redis_pool.lpop(_queue_key(event_id))
-        if user_id is None:
-            break
-        users.append(user_id)
-    return users
+# --- Cola Segura (Reliable Queue Pattern) ---
+# Lua script ejecutado atómicamente dentro de Redis.
+# Mueve N elementos de la cola principal a una lista temporal de "processing".
+# Si el Worker crashea, los usuarios quedan en "processing" y pueden recuperarse.
+
+_SAFE_POP_SCRIPT = """
+local source = KEYS[1]
+local dest = KEYS[2]
+local count = tonumber(ARGV[1])
+local moved = {}
+
+for i = 1, count do
+    local val = redis.call('LPOP', source)
+    if not val then break end
+    redis.call('RPUSH', dest, val)
+    table.insert(moved, val)
+end
+
+return moved
+"""
+
+
+async def queue_pop_safe(event_id: str, batch_size: int = 10) -> list[str]:
+    """Mueve usuarios de la cola a la lista de processing (atómico via Lua)."""
+    source = _queue_key(event_id)
+    dest = _processing_key(event_id)
+
+    result = await redis_pool.eval(
+        _SAFE_POP_SCRIPT, 2, source, dest, batch_size
+    )
+    return [r if isinstance(r, str) else r.decode() for r in (result or [])]
+
+
+async def clear_processing(event_id: str) -> None:
+    """Limpia la lista de processing después de un batch exitoso."""
+    await redis_pool.delete(_processing_key(event_id))
+
+
+async def get_processing_users(event_id: str) -> list[str]:
+    """Obtiene los usuarios que quedaron en processing (para recovery)."""
+    users = await redis_pool.lrange(_processing_key(event_id), 0, -1)
+    return [u if isinstance(u, str) else u.decode() for u in users]
+
+
+async def requeue_processing(event_id: str) -> int:
+    """Mueve usuarios de processing de vuelta a la cola (recovery al reiniciar)."""
+    processing_key = _processing_key(event_id)
+    queue_key = _queue_key(event_id)
+
+    users = await redis_pool.lrange(processing_key, 0, -1)
+    if not users:
+        return 0
+
+    # Re-insertar al frente de la cola (tienen prioridad, ya esperaron)
+    async with redis_pool.pipeline(transaction=True) as pipe:
+        for user in reversed(users):  # reversed para mantener orden original
+            pipe.lpush(queue_key, user)
+        pipe.delete(processing_key)
+        await pipe.execute()
+
+    return len(users)
 
 
 async def queue_position(event_id: str, user_id: str) -> int | None:
@@ -235,3 +292,24 @@ async def get_user_name(user_id: str) -> dict | None:
         "first_name": data.get("first_name", ""),
         "last_name": data.get("last_name", ""),
     }
+
+
+# --- Rate Limiting ---
+# Control de tasa de peticiones basado en IP y endpoint.
+
+async def check_rate_limit(key: str, limit: int, window: int) -> bool:
+    """
+    Verifica si una llave (IP:path) superó el límite en una ventana de tiempo.
+    Retorna True si puede proceder, False si debe ser bloqueado.
+    """
+    current = await redis_pool.get(key)
+    if current and int(current) >= limit:
+        return False
+
+    async with redis_pool.pipeline(transaction=True) as pipe:
+        # Incrementar contador y renovar expiración (solo si es necesario)
+        pipe.incr(key)
+        pipe.expire(key, window)
+        await pipe.execute()
+
+    return True

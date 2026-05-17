@@ -33,10 +33,11 @@ sequenceDiagram
     Note over U,DB: FASE 2: PROCESAMIENTO DE COLA (cada 1s)
     
     loop Cada segundo
-        W->>R: LPOP waiting_queue (count=10)
+        W->>R: Lua Script: Move to processing (atómico)
         R-->>W: [user_ids...]
         W->>R: HSET allowed_users {user_id} TTL=300s
         W->>R: PUBLISH position_updates
+        W->>R: DEL processing:{event_id} (batch exitoso)
         R-->>WS: Mensaje publicado
         WS-->>U: {new_position: 400}
         Note over F: React actualiza estado y re-renderiza posición
@@ -75,9 +76,9 @@ sequenceDiagram
 
 El usuario hace clic en "Entrar a la cola" desde el Frontend (React). El Frontend envía un `POST /api/queue/enter` a FastAPI. FastAPI ejecuta dos operaciones en Redis: primero `LPUSH` para agregar al usuario al final de la lista `waiting_queue`, y luego `LLEN` para obtener la longitud actual de la cola (que equivale a la posición del usuario). Redis responde con la posición (ej: 500). FastAPI le devuelve al Frontend la posición, un `queue_id` identificador y un tiempo estimado de espera. El Frontend muestra la sala de espera y abre una conexión WebSocket directa desde el browser hacia el WebSocket Server para recibir actualizaciones en tiempo real.
 
-**FASE 2 — Procesamiento de cola (pasos 10-16)**
+**FASE 2 — Procesamiento de cola (pasos 10-17)**
 
-Este es un loop que el Worker ejecuta cada segundo. El Worker hace `LPOP` para sacar un lote de hasta 10 usuarios del frente de la cola. Por cada usuario sacado, ejecuta `HSET` para moverlo a la estructura `allowed_users` (un HASH con TTL de 5 minutos). Luego publica un mensaje de actualización de posiciones vía `PUBLISH` (Pub/Sub de Redis). El WebSocket Server, que está suscrito a ese canal, recibe el mensaje y lo reenvía a todos los usuarios conectados con su nueva posición. El Frontend (React) recibe el dato vía WebSocket y actualiza el estado interno, re-renderizando la posición en pantalla — esto es un proceso interno de React, no una comunicación entre participantes.
+Este es un loop que el Worker ejecuta cada segundo. El Worker utiliza el **Patrón Reliable Queue** mediante un script Lua atómico (`queue_pop_safe`) para mover un lote de usuarios desde `waiting_queue` hacia una lista temporal `processing:{event_id}`. Esto garantiza que si el Worker falla durante el procesamiento, los usuarios no se pierdan y puedan ser recuperados. Por cada usuario sacado, ejecuta `HSET` para otorgarle un permiso temporal en `allowed_users` (un HASH con TTL de 5 minutos). Una vez que el lote se procesa con éxito, el Worker elimina la lista de `processing`. Finalmente, publica las actualizaciones de posición vía `PUBLISH`. El WebSocket Server reenvía estos datos a los usuarios conectados.
 
 **FASE 3 — Turno del usuario (pasos 17-21)**
 
@@ -87,7 +88,7 @@ Cuando el Worker saca al usuario actual de la cola y lo mueve a `allowed_users`,
 
 El usuario hace clic en "Comprar". El Frontend envía `POST /api/tickets/purchase` a FastAPI. FastAPI primero verifica en Redis que el usuario tenga permiso: ejecuta `HGET allowed_users {user_id}`. Si Redis confirma que el usuario está en `allowed_users` (es decir, es su turno y no expiró), FastAPI inicia una transacción en MySQL. Dentro de la transacción: hace un `SELECT ... FOR UPDATE` para bloquear la fila del evento y leer la capacidad restante, ejecuta el `INSERT` del ticket y decrementa la capacidad con `UPDATE`. Si todo sale bien, hace `COMMIT`.
 
-Después del commit exitoso, FastAPI ejecuta `HDEL allowed_users {user_id}` en Redis. Es importante aclarar que **`HDEL` no elimina al usuario de la cola** (`waiting_queue`) — el usuario ya fue sacado de ahí por el Worker con `LPOP` en la Fase 2. Lo que `HDEL` hace es eliminarlo de `allowed_users`, que es la estructura de **usuarios con permiso para comprar**. Es una limpieza: el usuario ya compró, no necesita seguir en la lista de permitidos. Si no se hiciera, el TTL de 5 minutos eventualmente lo limpiaría, pero es buena práctica borrarlo inmediatamente.
+Después del commit exitoso, FastAPI ejecuta `HDEL allowed_users {user_id}` en Redis para limpiar el permiso de compra. Es importante notar que el usuario ya no estaba en la cola principal (`waiting_queue`), sino que fue movido y procesado por el Worker en la Fase 2 usando el patrón de **cola segura**. La estructura `allowed_users` es puramente para control de acceso temporal; el borrado manual (HDEL) es una limpieza proactiva, aunque el TTL de 5 minutos lo haría eventualmente.
 
 Finalmente, FastAPI responde al Frontend con el resultado exitoso y el ID del ticket. El Frontend muestra "¡Ticket comprado!" al usuario.
 

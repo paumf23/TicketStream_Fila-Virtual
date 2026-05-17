@@ -58,9 +58,9 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
     logger.info(f"Evento {event_id}: Q_Len={queue_length}, Proc_Quota={processed_quota}, Aband_Quota={abandon_quota}")
 
 # = =============================================================
-    # 3. PROCESAMIENTO DE LOTE (POP)
+    # 3. PROCESAMIENTO DE LOTE (POP SEGURO → RELIABLE QUEUE)
 # ==============================================================
-    users = await redis_repository.queue_pop(
+    users = await redis_repository.queue_pop_safe(
         event_id, batch_size=total_to_pop
     )
 
@@ -107,6 +107,11 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
         )
 
     logger.info(f"[DEBUG] Evento {event_id}: Salieron {len(users)} (Proc: {processed_count}, Aband: {abandoned_count})")
+
+    # Limpiar la lista de processing ANTES de actualizar contadores.
+    # Si el Worker crashea después de este punto, los contadores no se duplican
+    # en el recovery (porque la lista de processing ya está vacía).
+    await redis_repository.clear_processing(event_id)
 
     # Actualizar contadores globales en Redis
     if abandoned_count > 0:
@@ -203,6 +208,22 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
 async def run_worker():
 
     logger.info("🔄 Worker iniciado")
+
+    # ═══ RECOVERY: re-encolar usuarios que quedaron en processing ═══
+    # Si el Worker crasheó en un ciclo anterior, puede haber usuarios
+    # atrapados en la lista "processing:{event_id}" de Redis.
+    # Los movemos de vuelta al frente de la cola para que sean procesados.
+    try:
+        sim_event_ids_recovery = await redis_repository.get_active_simulations()
+        for event_id in sim_event_ids_recovery:
+            recovered = await redis_repository.requeue_processing(event_id)
+            if recovered > 0:
+                logger.warning(
+                    f"♻️ RECOVERY: {recovered} usuarios re-encolados para evento {event_id}"
+                )
+    except Exception as e:
+        logger.error(f"Error durante recovery: {e}")
+
     logger.info(f"   DEFAULT_BATCH: {settings.BATCH_SIZE}")
     logger.info(f"   PROCESS_INTERVAL: {settings.PROCESS_INTERVAL}s")
 

@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_db
+from app.dependencies import get_db, rate_limit
 from app.schemas.queue import EnterQueueRequest, LeaveQueueRequest
 from app.schemas.responses import EnterQueueResponse, LeaveQueueResponse, QueuePositionResponse
 from app.services import queue_service
@@ -11,7 +11,7 @@ from app.services import queue_service
 router = APIRouter()
 
 
-@router.post("/enter", status_code=201, response_model=EnterQueueResponse)
+@router.post("/enter", status_code=201, response_model=EnterQueueResponse, dependencies=[Depends(rate_limit(limit=5, window=60))])
 async def enter_queue(
     body: EnterQueueRequest,
     db: AsyncSession = Depends(get_db),
