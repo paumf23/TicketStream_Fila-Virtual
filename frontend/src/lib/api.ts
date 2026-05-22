@@ -18,7 +18,11 @@ import type {
 // La URL base del backend FastAPI.
 // NEXT_PUBLIC_ es un prefijo especial de Next.js que hace que la variable
 // sea accesible desde el navegador (sin ese prefijo, solo se puede usar en el servidor).
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Si estamos en el servidor (SSR), usamos la URL interna de Docker (api:8000).
+// Si estamos en el navegador (CSR), usamos la URL expuesta al usuario (localhost:8000).
+const API_BASE = typeof window === "undefined"
+  ? process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // ── Función genérica para hacer requests ─────────────────────
 // Todas las funciones de abajo usan esta función internamente.

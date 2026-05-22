@@ -178,7 +178,7 @@ cp .env.example .env
 
 Los valores por defecto del `.env.example` están configurados para funcionar con Docker Compose sin cambios.
 
-### 3. Levantar la infraestructura (Backend + BD + Redis + Worker)
+### 3. Levantar la infraestructura (Frontend + Backend + BD + Redis + Worker)
 
 ```bash
 docker compose up -d
@@ -190,14 +190,15 @@ docker compose up -d
 docker compose ps
 ```
 
-Deberías ver 4 contenedores activos:
+Deberías ver 5 contenedores activos:
 
 | Contenedor | Servicio | Puerto |
 |---|---|---|
+| `vq_frontend` | Frontend Next.js | `3000` |
 | `vq_mysql` | Base de datos MySQL | `3306` |
 | `vq_redis` | Motor de fila Redis | `6379` |
 | `vq_api` | API FastAPI | `8000` |
-| `vq_worker` | Procesador de fila (background) | No expone puerto — es un proceso interno que se conecta a Redis y MySQL para avanzar la fila |
+| `vq_worker` | Procesador de fila (background) | No expone puerto |
 
 ### 5. Cargar datos de prueba
 
@@ -207,15 +208,7 @@ Este paso es **obligatorio** para que la aplicación tenga eventos visibles en l
 docker compose exec api python -m app.seed
 ```
 
-### 6. Levantar el frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### 7. Acceder a la aplicación
+### 6. Acceder a la aplicación
 
 | Servicio | URL |
 |---|---|
@@ -416,7 +409,7 @@ frontend/
 
 ## 🧪 Testing
 
-### Tests Unitarios (Backend)
+### Tests Unitarios y de Integración (Backend)
 
 Con los contenedores ya corriendo (`docker compose up -d`), ejecutá este comando en tu terminal. El comando entra al contenedor `vq_api` (que ya tiene Python y las dependencias instaladas) y ejecuta pytest. **Los resultados se muestran directamente en tu terminal.**
 
@@ -428,7 +421,8 @@ docker compose exec api python -m pytest tests/ -v
 El flag `-v` muestra cada test individual con su resultado (PASSED/FAILED). Los tests incluyen:
 
 - **`test_basic.py`** (8 tests) — Verifican endpoints HTTP: health check, rutas 404, validaciones de request body (422) para cada endpoint.
-- **`test_logic.py`** (15 tests) — Verifican schemas Pydantic (validación de datos de entrada) y la jerarquía de excepciones del dominio. No requieren conexión a MySQL ni Redis.
+- **`test_logic.py`** (15 tests) — Verifican schemas Pydantic (validación de datos de entrada) y la jerarquía de excepciones del dominio.
+- **`test_integration.py`** — Pruebas reales de negocio. Verifica el orden FIFO de la fila usando Redis, comprueba que las compras descuentan atómicamente la capacidad del evento en MySQL, valida la salud de la conexión a caché, y verifica el handshake de conexiones WebSocket.
 
 ### Tests de Carga (k6 + Grafana)
 

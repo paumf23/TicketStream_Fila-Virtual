@@ -142,6 +142,8 @@ export interface WsPositionUpdate {
   trend?: number;
   remaining_capacity?: number;
   tech_logs?: string[];
+  revenue?: number;
+  occupancy_percentage?: number;
 }
 
 

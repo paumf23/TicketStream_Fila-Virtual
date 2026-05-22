@@ -93,7 +93,7 @@ export default function LiveStats({
   useEffect(() => {
     if (!lastMessage || lastMessage.type !== "position_update") return;
 
-    const msg = lastMessage as any;
+    const msg = lastMessage;
 
     if (isSimMode) {
       // ═══════════════════════════════════════════════════════════════════════════

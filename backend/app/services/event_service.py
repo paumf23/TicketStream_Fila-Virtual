@@ -199,7 +199,7 @@ async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
     abandoned_count = await redis_repository.get_abandoned_count(event_id)
     processed_count = await redis_repository.get_processed_count(event_id)
     # Recuperar métricas dinámicas de simulación desde el hash en Redis
-    last_stats = await redis_repository.redis_pool.hgetall(f"event:{event_id}:stats")
+    last_stats = await redis_repository.get_event_stats_snapshot(event_id)
     
     effort = float(last_stats.get("effort", 0.0))
     trend = int(last_stats.get("trend", 0))

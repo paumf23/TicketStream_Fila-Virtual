@@ -93,6 +93,26 @@ services:
     networks:
       - vq_network
 
+  # --- Frontend (Next.js) ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vq_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # URL para el cliente (Navegador)
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      # URL para el servidor (SSR en Docker)
+      - INTERNAL_API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - vq_network
+
 networks:
   vq_network:
     driver: bridge

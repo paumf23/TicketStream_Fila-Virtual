@@ -84,7 +84,7 @@ export default function QueuePage() {
 
   // Función para consultar la posición actual al backend
   const fetchPosition = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || isMyTurn) return;
     try {
       const data = await getQueuePosition(userId, eventId);
       setPosition(data);
@@ -101,7 +101,7 @@ export default function QueuePage() {
       }
       setLoading(false);
     }
-  }, [userId, eventId]);
+  }, [userId, eventId, isMyTurn]);
 
   // Función para consultar las estadísticas del evento
   const fetchStats = useCallback(async () => {
@@ -135,8 +135,9 @@ export default function QueuePage() {
     }
 
     if (lastMessage.type === "position_update") {
-      fetchPosition();
-
+      if (!isMyTurn) {
+        fetchPosition();
+      }
 
       // Actualizar estadísticas de telemetría en tiempo real desde el mensaje del WebSocket
       const msg = lastMessage as any;
@@ -157,7 +158,7 @@ export default function QueuePage() {
         setWaitingBehind(prev => prev + Math.floor(Math.random() * 4) + 1);
       }
     }
-  }, [lastMessage, userId, fetchPosition]);
+  }, [lastMessage, userId, fetchPosition, isMyTurn]);
 
 
   // Disparar animación de choque (burst) cuando la posición en la fila mejora

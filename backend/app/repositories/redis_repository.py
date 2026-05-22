@@ -170,6 +170,16 @@ async def clear_queue(event_id: str) -> None:
 # --- Configuración y Métricas de Simulación ---
 # Gestión de parámetros de simulación y contadores estadísticos de flujo de usuarios.
 
+async def get_event_stats_snapshot(event_id: str) -> dict:
+    """Obtiene el snapshot de métricas dinámicas (stats) del evento."""
+    return await redis_pool.hgetall(f"event:{event_id}:stats")
+
+
+async def set_event_stats_snapshot(event_id: str, stats_data: dict) -> None:
+    """Actualiza el snapshot de métricas dinámicas (stats) del evento."""
+    await redis_pool.hset(f"event:{event_id}:stats", mapping=stats_data)
+
+
 async def set_event_config(
     event_id: str, speed: int, abandon_rate: float
 ) -> None:

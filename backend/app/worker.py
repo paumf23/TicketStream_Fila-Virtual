@@ -10,6 +10,7 @@ import logging
 import signal
 import random
 import time
+import psutil
 
 from app.config import settings
 from app.database import AsyncSessionLocal
@@ -140,7 +141,7 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
     trend = incoming_rate - throughput_rate
 
     # Obtener stats actuales para precio y recaudación
-    last_stats = await redis_repository.redis_pool.hgetall(f"event:{event_id}:stats")
+    last_stats = await redis_repository.get_event_stats_snapshot(event_id)
     total_capacity = int(last_stats.get("total_capacity", 1000))
     price = float(last_stats.get("price", 0.0))
     current_revenue = float(last_stats.get("revenue", 0.0))
@@ -167,24 +168,32 @@ async def process_event_queue(event_id: str, batch_size: int, interval: float, a
         "processed_count": int(last_stats.get("processed_count", 0)) + processed_count,
         "abandoned_count": int(last_stats.get("abandoned_count", 0)) + abandoned_count
     }
-    await redis_repository.redis_pool.hset(f"event:{event_id}:stats", mapping=stats_data)
+    redis_start = time.time()
+    await redis_repository.set_event_stats_snapshot(event_id, stats_data)
+    redis_latency_ms = (time.time() - redis_start) * 1000
 
 # ===============================================================
-# 6. LOGS TÉCNICOS ROTATIVOS (DECORACIÓN)
+# 6. LOGS TÉCNICOS ROTATIVOS
 # ===============================================================
-    tick_count = int(time.time())
+    tick_cycle = int(time.time()) % 4
     tech_logs = []
     
-    # Log 1: Siempre el estado del lote
-    tech_logs.append(f"[WORKER] Batch_ID: {random.getrandbits(16):04x} | Proc: {len(users)}u | Load: {effort}%")
-    
-    # Log 2: Rotar entre Redis y Sistema
-    if tick_count % 3 == 0:
-        tech_logs.append(f"[REDIS] Latency: {random.uniform(0.1, 0.9):.2f}ms | Pipeline: HSET [OK] | Shard: queue_0")
-    elif tick_count % 3 == 1:
-        tech_logs.append(f"[SYSTEM] Mem: {200 + random.randint(10, 50)}MB | CPU_Core: {random.randint(5, 15)}% | IO: Stable")
+    # Log 1: Siempre el estado del lote y la carga del worker
+    if tick_cycle == 0:
+        tech_logs.append(f"[WORKER] Batch_ID: {random.getrandbits(16):04x} | Proc: {len(users)}u | Load: {effort}%")
+    # Log 2: Redis (Latencia real del HSET anterior)
+    elif tick_cycle == 1:
+        tech_logs.append(f"[REDIS] Latency: {redis_latency_ms:.2f}ms | Pipeline: HSET [OK] | Shard: queue_0")
+    # Log 3: Sistema (Memoria y CPU reales usando psutil)
+    elif tick_cycle == 2:
+        mem_mb = psutil.virtual_memory().used / (1024 * 1024)
+        cpu_percent = psutil.cpu_percent()
+        tech_logs.append(f"[SYSTEM] Mem: {mem_mb:.1f}MB | CPU_Core: {cpu_percent}% | IO: Stable")
+    # Log 4: Red (Estimación del payload de WebSocket enviado)
     else:
-        tech_logs.append(f"[NETWORK] WS_Broad: 1.4KB | Clients: 1 | Latency: {random.randint(5, 25)}ms")
+        payload_estimate = len(json.dumps(stats_data)) + 300  # Estimación en bytes
+        ws_broad_kb = payload_estimate / 1024
+        tech_logs.append(f"[NETWORK] WS_Broad: {ws_broad_kb:.2f}KB | Event: {event_id[:8]}...")
 
     return {
         "type": "position_update",

@@ -228,7 +228,7 @@ Ver [`.env.example`](../.env.example) para la referencia completa. Resumen:
 
 ## 🧪 Tests
 
-### Tests Unitarios
+### Tests Unitarios y de Integración
 
 ```bash
 # Ejecutar tests dentro del contenedor Docker
@@ -238,7 +238,8 @@ docker compose exec api python -m pytest tests/ -v
 Los tests incluyen:
 
 - **`test_basic.py`** (8 tests) — Verifican endpoints HTTP: health check, rutas 404, validaciones de request body (422).
-- **`test_logic.py`** (17 tests) — Verifican schemas Pydantic (validación de datos) y la jerarquía de excepciones del dominio. No requieren conexión a MySQL ni Redis.
+- **`test_logic.py`** (17 tests) — Verifican schemas Pydantic (validación de datos) y la jerarquía de excepciones del dominio.
+- **`test_integration.py`** — Pruebas reales de negocio. Verifica el orden FIFO de la fila usando Redis, comprueba que las compras descuentan atómicamente la capacidad del evento en MySQL, valida la salud de la conexión a caché, y verifica el handshake de conexiones WebSocket.
 
 ### Lint
 

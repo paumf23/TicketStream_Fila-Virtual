@@ -15,24 +15,7 @@ from app.exceptions import BadRequestError, NotFoundError
 from app.repositories import event_repository, redis_repository
 from app.schemas.responses import SimulateLoadResponse
 from app.schemas.simulate import SimulateLoadRequest, AdvancedSimulateRequest
-
-FIRST_NAMES = [
-    "Martín", "Lucía", "Santiago", "Valentina", "Mateo",
-    "Sofía", "Benjamín", "Catalina", "Joaquín", "Emilia",
-    "Tomás", "Isabella", "Agustín", "Camila", "Felipe",
-    "Julieta", "Nicolás", "Florencia", "Thiago", "Renata",
-    "Facundo", "Milagros", "Lautaro", "Candela", "Bautista",
-    "Pilar", "Ignacio", "Rocío", "Manuel", "Abril",
-]
-
-LAST_NAMES = [
-    "González", "Rodríguez", "Martínez", "López", "García",
-    "Pérez", "Fernández", "Díaz", "Romero", "Alvarez",
-    "Torres", "Ruiz", "Ramírez", "Flores", "Herrera",
-    "Medina", "Castro", "Vargas", "Morales", "Gutiérrez",
-    "Sánchez", "Ortiz", "Silva", "Molina", "Acosta",
-    "Rojas", "Cabrera", "Núñez", "Peralta", "Figueroa",
-]
+from app.mock_data import FIRST_NAMES, LAST_NAMES
 
 
 
