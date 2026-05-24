@@ -39,7 +39,6 @@ async def simulate_load(
     created_users = []
     # Limpiar cola previa y resetear configuración para que no persista de simulaciones avanzadas
     await redis_repository.clear_queue(body.event_id)
-    await redis_repository.redis_pool.delete(f"event:{body.event_id}:stats")
     await redis_repository.set_event_config(body.event_id, speed=360, abandon_rate=1.5)
 
     for _ in range(body.num_users):
@@ -76,9 +75,6 @@ async def simulate_advanced(
 
     # 1. Limpiar todo rastro previo PRIMERO
     await redis_repository.clear_queue(body.event_id)
-    await redis_repository.redis_pool.delete(f"event:{body.event_id}:stats")
-    await redis_repository.redis_pool.delete(f"event:{body.event_id}:processed")
-    await redis_repository.redis_pool.delete(f"event:{body.event_id}:abandoned")
 
     # 2. Guardar configuración de simulación (velocidad y abandono)
     await redis_repository.set_event_config(
@@ -86,9 +82,9 @@ async def simulate_advanced(
     )
     
     # 3. Guardar snapshot inicial de datos del evento
-    await redis_repository.redis_pool.hset(
-        f"event:{body.event_id}:stats",
-        mapping={
+    await redis_repository.set_event_stats_snapshot(
+        body.event_id,
+        stats_data={
             "total_capacity": body.event_capacity,
             "remaining_capacity": body.event_capacity,
             "price": float(event.price),

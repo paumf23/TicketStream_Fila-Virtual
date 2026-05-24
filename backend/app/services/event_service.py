@@ -32,6 +32,7 @@ class InvalidEventDataError(ValidationError):
 
 
 async def get_all_events(db: AsyncSession) -> list[dict]:
+    """Obtiene todos los eventos registrados en el sistema, sin importar su estado."""
 
     events = await event_repository.get_all_events(db)
 
@@ -39,11 +40,13 @@ async def get_all_events(db: AsyncSession) -> list[dict]:
 
 
 async def get_active_events(db: AsyncSession, category: str | None = None) -> list[dict]:
+    """Obtiene una lista de todos los eventos que se encuentran en estado 'active'."""
     events = await event_repository.get_active_events(db, category)
     return [_event_to_dict(e) for e in events]
 
 
 async def get_event_by_id(db: AsyncSession, event_id: str) -> dict:
+    """Obtiene los detalles de un evento específico por su ID."""
 
     event = await event_repository.get_event_by_id(db, event_id)
     if event is None:
@@ -67,6 +70,10 @@ async def create_event(
     currency: str = "ARS",
     category: str | None = None,
 ) -> dict:
+    """
+    Crea un nuevo evento en estado 'draft'.
+    Valida las capacidades, precios y fechas antes de su creación.
+    """
 
     if total_capacity <= 0:
         raise InvalidEventDataError(
@@ -119,6 +126,10 @@ async def create_event(
 
 
 async def activate_event(db: AsyncSession, event_id: str) -> dict:
+    """
+    Cambia el estado de un evento de 'draft' a 'active'.
+    Solo los eventos en estado borrador pueden ser activados.
+    """
     event = await event_repository.get_event_by_id(db, event_id)
     if event is None:
         raise EventNotFoundError(f"Evento {event_id} no encontrado")
@@ -154,6 +165,10 @@ async def activate_event(db: AsyncSession, event_id: str) -> dict:
 
 
 async def mark_sold_out(db: AsyncSession, event_id: str) -> dict:
+    """
+    Marca un evento activo como 'sold_out' cuando no quedan entradas.
+    Publica una notificación global en Redis para informar a los usuarios.
+    """
 
     event = await event_repository.get_event_by_id(db, event_id)
     if event is None:
@@ -187,6 +202,10 @@ async def mark_sold_out(db: AsyncSession, event_id: str) -> dict:
 
 
 async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
+    """
+    Recopila métricas en tiempo real de un evento fusionando datos 
+    estáticos de la DB y dinámicos cacheados en Redis.
+    """
 
     event = await event_repository.get_event_by_id(db, event_id)
     if event is None:
@@ -242,22 +261,22 @@ async def get_event_stats(db: AsyncSession, event_id: str) -> dict:
 
 
 def _event_to_dict(event) -> dict:
-    return {
-        "event_id": event.id,
-        "name": event.name,
-        "description": event.description,
-        "image_url": event.image_url,
-        "total_capacity": event.total_capacity,
-        "remaining_capacity": event.remaining_capacity,
-        "price": float(event.price),
-        "currency": event.currency,
-        "event_date": str(event.event_date),
-        "sale_start": str(event.sale_start),
-        "sale_end": str(event.sale_end),
-        "status": event.status,
-        "category": event.category,
-        "rating": float(event.rating) if event.rating else None,
-        "rating_label": event.rating_label,
-        "created_at": str(event.created_at),
-        "updated_at": str(event.updated_at),
-    }
+    """
+    Convierte dinámicamente el modelo SQLAlchemy a diccionario para evitar desincronización.
+    Extrae todas las columnas automáticamente, por lo que si se agregan campos a la BD, 
+    se incluirán sin necesidad de actualizar esta función.
+    """
+    # Extraer dinámicamente todas las columnas del modelo SQLAlchemy
+    result = {column.name: getattr(event, column.name) for column in event.__table__.columns}
+    
+    # Renombrar 'id' a 'event_id' para mantener compatibilidad con el Schema de respuesta
+    result["event_id"] = result.pop("id", None)
+    
+    # Formatear fechas y números (Decimals a float)
+    for key, value in result.items():
+        if isinstance(value, datetime):
+            result[key] = str(value)
+        elif value is not None and not isinstance(value, (int, str, float, bool, list, dict)):
+            result[key] = float(value)
+            
+    return result

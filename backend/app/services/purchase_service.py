@@ -51,6 +51,11 @@ async def initiate_purchase(
     payment_provider: str | None = None,
     quantity: int = 1,
 ) -> dict:
+    """
+    Ejecuta el flujo de compra de tickets para un usuario.
+    Valida permisos en Redis, resta capacidad, crea comprador, ticket y pago.
+    Utiliza una transacción anidada para asegurar la integridad de la base de datos.
+    """
     logger.info(f"Iniciando flujo de compra: Usuario {user_id} para evento {event_id} (Cantidad: {quantity})")
 
     allowed = await redis_repository.is_allowed(event_id, user_id)
@@ -151,6 +156,10 @@ async def get_ticket_detail(
     db: AsyncSession,
     ticket_id: str,
 ) -> dict:
+    """
+    Obtiene los detalles completos de un ticket, incluyendo
+    información del comprador, evento y estado del pago.
+    """
 
     ticket = await ticket_repository.get_ticket_by_id(db, ticket_id)
     if ticket is None:

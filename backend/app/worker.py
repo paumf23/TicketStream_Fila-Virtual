@@ -236,7 +236,7 @@ async def run_worker():
     logger.info(f"   DEFAULT_BATCH: {settings.BATCH_SIZE}")
     logger.info(f"   PROCESS_INTERVAL: {settings.PROCESS_INTERVAL}s")
 
-    while True:
+    while _running:
         try:
             # 1. EVENTOS CON SIMULACIÓN ACTIVA
             sim_event_ids = await redis_repository.get_active_simulations()

@@ -40,6 +40,10 @@ async def enter_queue(
     first_name: str,
     last_name: str,
 ) -> dict:
+    """
+    Registra a un usuario en la cola de un evento activo.
+    Valida la existencia y el estado del evento antes de agregarlo en Redis y DB.
+    """
 
     event = await event_repository.get_event_by_id(db, event_id)
     if event is None:
@@ -91,6 +95,10 @@ async def get_position(
     user_id: str,
     event_id: str,
 ) -> dict:
+    """
+    Obtiene la posición actual de un usuario en la cola de un evento.
+    Calcula el tiempo de espera estimado basado en la velocidad de procesamiento.
+    """
 
     position = await redis_repository.queue_position(event_id, user_id)
     if position is None:
@@ -115,6 +123,7 @@ async def get_position(
 
 
 async def _estimate_wait(position: int, speed: int) -> str:
+    """Calcula el tiempo estimado de espera en base a la posición y velocidad."""
     if speed <= 0:
         return "Pendiente..."
     
@@ -134,6 +143,10 @@ async def leave_queue(
     user_id: str,
     event_id: str,
 ) -> dict:
+    """
+    Permite a un usuario abandonar voluntariamente la cola de un evento.
+    Actualiza su estado en Redis y en el historial de la base de datos.
+    """
 
     existing = await queue_history_repository.get_active_record(
         db, user_id, event_id

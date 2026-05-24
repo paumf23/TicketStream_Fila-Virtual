@@ -24,12 +24,14 @@ class ConnectionManager:
         self._grace_period: dict[str, set[str]] = {}
 
     async def connect(self, websocket: WebSocket, event_id: str) -> None:
+        """Acepta una nueva conexión WebSocket y la registra para un evento específico."""
         await websocket.accept()
         if event_id not in self._connections:
             self._connections[event_id] = set()
         self._connections[event_id].add(websocket)
 
     def disconnect(self, websocket: WebSocket, event_id: str) -> None:
+        """Elimina una conexión WebSocket del registro de un evento específico."""
 
         if event_id in self._connections:
             self._connections[event_id].discard(websocket)
@@ -38,10 +40,12 @@ class ConnectionManager:
                 del self._connections[event_id]
 
     async def send_personal(self, websocket: WebSocket, data: dict) -> None:
+        """Envía un mensaje JSON a una conexión WebSocket individual."""
         with contextlib.suppress(Exception):
             await websocket.send_json(data)
 
     async def broadcast(self, event_id: str, data: dict) -> None:
+        """Envía un mensaje JSON a todas las conexiones WebSocket suscritas a un evento."""
 
         if event_id not in self._connections:
             return
@@ -58,12 +62,14 @@ class ConnectionManager:
             self._connections[event_id].discard(dead)
 
     def get_connection_count(self, event_id: str) -> int:
+        """Devuelve la cantidad de conexiones activas para un evento específico."""
 
         if event_id not in self._connections:
             return 0
         return len(self._connections[event_id])
 
     def get_total_connections(self) -> int:
+        """Devuelve la cantidad total de conexiones activas en todos los eventos."""
 
         return sum(len(conns) for conns in self._connections.values())
 

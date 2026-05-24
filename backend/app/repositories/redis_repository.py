@@ -161,10 +161,12 @@ async def remove_queue_entry(event_id: str, user_id: str) -> None:
 
 
 async def clear_queue(event_id: str) -> None:
+    """Limpia completamente el estado de la cola y estadísticas de simulación."""
     await redis_pool.delete(_queue_key(event_id))
     await redis_pool.delete(f"event:{event_id}:abandoned")
     await redis_pool.delete(f"event:{event_id}:processed")
     await redis_pool.delete(f"event:{event_id}:incoming")
+    await redis_pool.delete(f"event:{event_id}:stats")
 
 
 # --- Configuración y Métricas de Simulación ---
@@ -307,19 +309,34 @@ async def get_user_name(user_id: str) -> dict | None:
 # --- Rate Limiting ---
 # Control de tasa de peticiones basado en IP y endpoint.
 
+# LUA SCRIPT PARA RATE LIMITING ATÓMICO
+# ¿Qué es Lua?: Es un lenguaje de programación rápido y ligero integrado dentro de Redis.
+# ¿Por qué lo usamos aquí?: Cuando enviamos un script Lua a Redis, este lo ejecuta entero como una sola
+# operación "atómica". Ninguna otra petición puede meterse en el medio. Esto soluciona la "Race Condition"
+# donde dos peticiones simultáneas podrían leer el mismo contador antes de incrementarlo.
+_RATE_LIMIT_SCRIPT = """
+local current = redis.call('GET', KEYS[1])
+if current and tonumber(current) >= tonumber(ARGV[1]) then
+    return 0 -- Superó el límite
+end
+current = redis.call('INCR', KEYS[1])
+if tonumber(current) == 1 then
+    redis.call('EXPIRE', KEYS[1], ARGV[2])
+end
+return 1 -- Permitido
+"""
+
 async def check_rate_limit(key: str, limit: int, window: int) -> bool:
     """
     Verifica si una llave (IP:path) superó el límite en una ventana de tiempo.
     Retorna True si puede proceder, False si debe ser bloqueado.
+    Utiliza un script Lua para garantizar que la lectura y el incremento sean atómicos.
     """
-    current = await redis_pool.get(key)
-    if current and int(current) >= limit:
-        return False
-
-    async with redis_pool.pipeline(transaction=True) as pipe:
-        # Incrementar contador y renovar expiración (solo si es necesario)
-        pipe.incr(key)
-        pipe.expire(key, window)
-        await pipe.execute()
-
-    return True
+    result = await redis_pool.eval(
+        _RATE_LIMIT_SCRIPT, 
+        1,       # Número de llaves (solo usamos 1 llave)
+        key,     # Se mapea a KEYS[1]
+        limit,   # Se mapea a ARGV[1]
+        window   # Se mapea a ARGV[2]
+    )
+    return bool(result)
