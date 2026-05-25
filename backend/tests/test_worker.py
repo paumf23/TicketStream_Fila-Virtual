@@ -1,47 +1,55 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-from app import worker
+from app.worker import QueueWorker
 
 @pytest.fixture
 def mock_redis_repo():
-    with patch("app.worker.redis_repository") as mock_repo:
-        mock_repo.get_event_config = AsyncMock(return_value={"speed": 360, "abandon_rate": 0.0})
-        mock_repo.queue_length = AsyncMock(return_value=100)
-        mock_repo.queue_pop_safe = AsyncMock(return_value=["user1", "user2", "user3"])
-        mock_repo.get_incoming_count = AsyncMock(return_value=10)
-        mock_repo.reset_incoming_count = AsyncMock()
-        mock_repo.remove_active_simulation = AsyncMock()
-        mock_repo.set_allowed = AsyncMock()
-        mock_repo.publish = AsyncMock()
-        mock_repo.clear_processing = AsyncMock()
-        mock_repo.increment_abandoned_count = AsyncMock()
-        mock_repo.increment_processed_count = AsyncMock()
-        mock_repo.get_event_stats_snapshot = AsyncMock(
-            return_value={"total_capacity": 1000, "price": 50.0, "revenue": 100.0, "processed_count": 0, "abandoned_count": 0}
-        )
-        mock_repo.set_event_stats_snapshot = AsyncMock()
-        mock_repo.get_active_simulations = AsyncMock(return_value=["event-1"])
-        mock_repo.requeue_processing = AsyncMock(return_value=5)
+    mock_repo = MagicMock()
+    mock_repo.get_event_config = AsyncMock(return_value={"speed": 360, "abandon_rate": 0.0})
+    mock_repo.queue_length = AsyncMock(return_value=100)
+    mock_repo.queue_pop_safe = AsyncMock(return_value=["user1", "user2", "user3"])
+    mock_repo.get_incoming_count = AsyncMock(return_value=10)
+    mock_repo.reset_incoming_count = AsyncMock()
+    mock_repo.remove_active_simulation = AsyncMock()
+    mock_repo.set_allowed = AsyncMock()
+    mock_repo.publish = AsyncMock()
+    mock_repo.clear_processing = AsyncMock()
+    mock_repo.increment_abandoned_count = AsyncMock()
+    mock_repo.increment_processed_count = AsyncMock()
+    mock_repo.get_event_stats_snapshot = AsyncMock(
+        return_value={"total_capacity": 1000, "price": 50.0, "revenue": 100.0, "processed_count": 0, "abandoned_count": 0}
+    )
+    mock_repo.set_event_stats_snapshot = AsyncMock()
+    mock_repo.get_active_simulations = AsyncMock(return_value=["event-1"])
+    mock_repo.requeue_processing = AsyncMock(return_value=5)
 
-        yield mock_repo
+    return mock_repo
+
+@pytest.fixture
+def mock_settings():
+    settings = MagicMock()
+    settings.BATCH_SIZE = 10
+    settings.PROCESS_INTERVAL = 1.0
+    settings.ALLOWED_TTL = 300
+    return settings
+
+@pytest.fixture
+def worker_instance(mock_redis_repo, mock_settings):
+    return QueueWorker(redis_repo=mock_redis_repo, app_settings=mock_settings)
 
 
-def test_handle_shutdown():
-    """Prueba que el manejador de señales cambie la variable global para apagar el worker de forma segura."""
-    # Reset global var to True just in case
-    worker._running = True
-
-    # Call handler with dummy signal and frame
-    worker._handle_shutdown(15, None)
-
-    assert worker._running is False
+def test_handle_shutdown(worker_instance):
+    """Prueba que el manejador stop cambie la variable para apagar el worker de forma segura."""
+    assert worker_instance._running is True
+    worker_instance.stop()
+    assert worker_instance._running is False
 
 
 @pytest.mark.asyncio
-async def test_process_event_queue_nominal(mock_redis_repo):
+async def test_process_event_queue_nominal(worker_instance, mock_redis_repo):
     """Prueba el procesamiento de un lote normal, sin abandonos."""
-    result = await worker.process_event_queue(
+    result = await worker_instance.process_event_queue(
         event_id="test-event",
         batch_size=3,
         interval=1.0,
@@ -65,14 +73,14 @@ async def test_process_event_queue_nominal(mock_redis_repo):
 
 
 @pytest.mark.asyncio
-async def test_process_event_queue_with_abandon(mock_redis_repo):
+async def test_process_event_queue_with_abandon(worker_instance, mock_redis_repo):
     """Prueba el procesamiento de un lote mixto donde algunos usuarios simulados abandonan la cola."""
     # Usuarios: dos simulados y uno real
     mock_redis_repo.queue_pop_safe = AsyncMock(return_value=["sim-1", "sim-2", "real-1"])
     # Worker.py sobreescribe el parámetro leyendo de redis
     mock_redis_repo.get_event_config = AsyncMock(return_value={"speed": 360, "abandon_rate": 66.0})
 
-    result = await worker.process_event_queue(
+    result = await worker_instance.process_event_queue(
         event_id="test-event",
         batch_size=3,
         interval=1.0,
@@ -93,17 +101,16 @@ async def test_process_event_queue_with_abandon(mock_redis_repo):
 
 
 @pytest.mark.asyncio
-async def test_run_worker_recovery(mock_redis_repo):
+async def test_run_worker_recovery(worker_instance, mock_redis_repo, monkeypatch):
     """Prueba el inicio del Worker, su proceso de Recovery inicial y su apagado seguro (graceful exit)."""
-    worker._running = True
-
-    # El loop va a procesar una vez (porque mockeamos get_active_simulations para que responda)
-    # y cuando llame a asyncio.sleep simularemos la interrupción forzando a False _running.
+    # El loop va a procesar una vez (porque mock_redis_repo.get_active_simulations responde con un evento)
+    # y cuando llame a asyncio.sleep simularemos la interrupción forzando worker_instance.stop().
     async def mock_sleep(*args, **kwargs):
-        worker._running = False
+        worker_instance.stop()
 
-    with patch("asyncio.sleep", new_callable=AsyncMock, side_effect=mock_sleep):
-        await worker.run_worker()
+    monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+    await worker_instance.run()
 
     # Verificar proceso de Recovery inicial
     mock_redis_repo.requeue_processing.assert_called_with("event-1")
