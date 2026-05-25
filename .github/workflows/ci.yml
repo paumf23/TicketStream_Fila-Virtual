@@ -1,0 +1,66 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    # 1. Levantar los motores de datos aislados para las pruebas
+    services:
+      redis:
+        image: redis:7.0-alpine
+        ports:
+          - 6379:6379
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: virtual_queue
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Instalar dependencias del Sistema Operativo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmariadb-dev gcc mysql-client
+
+      - name: Instalar dependencias de Python (Backend)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Inicializar Base de Datos
+        env:
+          MYSQL_PWD: secret
+        run: |
+          # Importamos el schema inicial para que los tests de integracion encuentren las tablas
+          mysql -h 127.0.0.1 -u root virtual_queue < migrations/init.sql
+
+      - name: Ejecutar Suite de Pruebas (Pytest)
+        env:
+          # Las pruebas se conectarán a los servicios temporales de Github
+          REDIS_URL: redis://localhost:6379/0
+          DATABASE_URL: mysql+asyncmy://root:secret@127.0.0.1:3306/virtual_queue
+        run: |
+          export PYTHONPATH=backend
+          pytest backend/tests/ -v

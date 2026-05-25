@@ -332,6 +332,8 @@ backend/
     ├── conftest.py                 # Fixtures de pytest
     ├── test_basic.py               # Tests de endpoints
     ├── test_logic.py               # Tests de schemas y validación
+    ├── test_worker.py              # Tests unitarios del Worker aislando a Redis
+    ├── test_integration.py         # Tests de integración end-to-end
     └── load/                       # Tests de carga (k6)
         └── scripts/
             ├── smoke-test.js
@@ -422,6 +424,7 @@ El flag `-v` muestra cada test individual con su resultado (PASSED/FAILED). Los 
 
 - **`test_basic.py`** (8 tests) — Verifican endpoints HTTP: health check, rutas 404, validaciones de request body (422) para cada endpoint.
 - **`test_logic.py`** (15 tests) — Verifican schemas Pydantic (validación de datos de entrada) y la jerarquía de excepciones del dominio.
+- **`test_worker.py`** (4 tests) — Pruebas unitarias aisladas del procesador en background. Verifica la correcta segregación de cuotas de abandono, actualizaciones y apagado seguro sin depender de bases de datos.
 - **`test_integration.py`** — Pruebas reales de negocio. Verifica el orden FIFO de la fila usando Redis, comprueba que las compras descuentan atómicamente la capacidad del evento en MySQL, valida la salud de la conexión a caché, y verifica el handshake de conexiones WebSocket.
 
 ### Tests de Carga (k6 + Grafana)
@@ -540,6 +543,8 @@ Virtual Queue/
 │   └── tests/
 │       ├── test_basic.py               # Tests de endpoints
 │       ├── test_logic.py               # Tests de schemas y validación
+│       ├── test_worker.py              # Tests unitarios del Worker
+│       ├── test_integration.py         # Tests de integración
 │       └── load/                       # Tests de carga (k6 scripts)
 │           └── scripts/
 │               ├── smoke-test.js

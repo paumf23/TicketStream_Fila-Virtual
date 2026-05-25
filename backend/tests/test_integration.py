@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import pytest
 from httpx import AsyncClient
 
-from app.redis import redis_client
+from app.redis import redis_pool
 from app.repositories import redis_repository
 
 
@@ -25,7 +25,7 @@ async def test_integration_purchase_decrements_capacity(client: AsyncClient):
     }
     response = await client.post("/api/events/", json=event_data)
     assert response.status_code == 201, f"Fallo al crear evento: {response.text}"
-    event_id = response.json()["id"]
+    event_id = response.json()["event_id"]
 
     # 2. Dar permiso en Redis
     user_id = str(uuid.uuid4())
@@ -64,11 +64,11 @@ async def test_integration_queue_fifo_order():
     user_b = str(uuid.uuid4())
     
     # 2. Encolar Usuario A y luego B
-    await redis_repository.add_to_queue(event_id, user_a)
-    await redis_repository.add_to_queue(event_id, user_b)
+    await redis_repository.queue_push(event_id, user_a)
+    await redis_repository.queue_push(event_id, user_b)
     
     # 3. Extraer usuarios simulando el Worker (LPOP/LMOVE por lote)
-    lote = await redis_repository.get_batch_from_queue(event_id, batch_size=5)
+    lote = await redis_repository.queue_pop_safe(event_id, batch_size=5)
     
     # 4. Assert orden (FIFO)
     assert len(lote) == 2
@@ -80,14 +80,14 @@ async def test_integration_queue_fifo_order():
 async def test_integration_redis_health():
     """Verifica que la comunicación y persistencia en caché/memoria temporal funcione bien."""
     # Ping
-    ping_res = await redis_client.ping()
+    ping_res = await redis_pool.ping()
     assert ping_res is True
     
     # Set / Get con expiración
     test_key = "test_integration_health_key"
-    await redis_client.set(test_key, "funciona", ex=5)
+    await redis_pool.set(test_key, "funciona", ex=5)
     
-    val = await redis_client.get(test_key)
+    val = await redis_pool.get(test_key)
     assert val == "funciona"
 
 

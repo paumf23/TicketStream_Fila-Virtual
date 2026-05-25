@@ -2,14 +2,44 @@
 import pytest
 
 
+import pytest
+from unittest.mock import patch, AsyncMock
+
+@pytest.fixture(autouse=True)
+def mock_rate_limit():
+    """Mock global para aislar la dependencia rate_limit en todos los tests de basic."""
+    with patch("app.dependencies.redis_repository.check_rate_limit", new_callable=AsyncMock) as mock_check:
+        mock_check.return_value = True
+        yield mock_check
+
 @pytest.mark.anyio
-async def test_health_check_returns_200(client):
+@patch("app.routers.health.redis_pool", new_callable=AsyncMock)
+async def test_health_check_returns_200(mock_redis_pool, client):
+    mock_redis_pool.ping.return_value = True
+    
     response = await client.get("/health")
     assert response.status_code == 200
 
     data = response.json()
     assert "status" in data
     assert data["service"] == "virtual-queue-api"
+    assert data["redis"] == "connected"
+    mock_redis_pool.ping.assert_called_once()
+
+
+@pytest.mark.anyio
+@patch("app.routers.health.redis_pool", new_callable=AsyncMock)
+async def test_health_check_redis_disconnected(mock_redis_pool, client):
+    """Verifica que el sistema indique estado degraded si Redis falla."""
+    mock_redis_pool.ping.side_effect = Exception("Connection refused")
+    
+    response = await client.get("/health")
+    assert response.status_code == 200  # API sigue viva
+    
+    data = response.json()
+    assert data["status"] == "degraded"
+    assert data["redis"] == "disconnected"
+    mock_redis_pool.ping.assert_called_once()
 
 
 @pytest.mark.anyio
@@ -20,8 +50,11 @@ async def test_nonexistent_route_returns_404(client):
 
 
 @pytest.mark.anyio
-async def test_events_list_returns_valid_response(client):
-    """Verifica que el listado de eventos responde correctamente con la DB disponible."""
+@patch("app.routers.events.event_service.get_all_events", new_callable=AsyncMock)
+async def test_events_list_returns_valid_response(mock_get_all, client):
+    """Verifica que el listado de eventos responde correctamente con la DB mockeada."""
+    mock_get_all.return_value = []  # Retorna lista vacía como si no hubiera eventos
+
     response = await client.get("/api/events/")
     assert response.status_code == 200
 
