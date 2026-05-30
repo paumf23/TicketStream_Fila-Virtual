@@ -30,14 +30,12 @@ export default function SimulationDrawer({
   const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
-    let id = localStorage.getItem("vq_user_id");
-    if (!id) {
-      id = "sim-" + Math.random().toString(36).substring(2, 9);
-      localStorage.setItem("vq_user_id", id);
-      // Se necesitan nombres básicos para que no falle el backend
-      localStorage.setItem("vq_first_name", "Usuario");
-      localStorage.setItem("vq_last_name", "Simulado");
-    }
+    // Siempre generamos un ID de simulación nuevo
+    const id = "sim-" + Math.random().toString(36).substring(2, 9);
+    localStorage.setItem("vq_user_id", id);
+    // Se necesitan nombres básicos para que no falle el backend
+    localStorage.setItem("vq_first_name", "Usuario");
+    localStorage.setItem("vq_last_name", "Simulado");
     setUserId(id);
   }, []);
 

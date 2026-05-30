@@ -43,10 +43,15 @@ export default function PurchaseForm({
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   useEffect(() => {
-    // Prellenar nombre desde localStorage
-    setFirstName(localStorage.getItem("vq_first_name") || "");
-    setLastName(localStorage.getItem("vq_last_name") || "");
-  }, []);
+    if (userId.startsWith("sim-")) {
+      setFirstName("");
+      setLastName("");
+    } else {
+      // Prellenar nombre desde localStorage
+      setFirstName(localStorage.getItem("vq_first_name") || "");
+      setLastName(localStorage.getItem("vq_last_name") || "");
+    }
+  }, [userId]);
 
   useEffect(() => {
     setPaymentProvider("");
