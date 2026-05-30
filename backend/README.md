@@ -40,6 +40,21 @@ Routers (HTTP/WS)  →  Services (Lógica de negocio)  →  Repositories (Acceso
 
 ---
 
+## Patrones y Prácticas implementadas
+
+| | Implementación |
+|---|---|
+| **Repository Pattern** | Capa de repositories para MySQL y Redis |
+| **Service Layer** | Lógica de negocio separada de routers |
+| **Reliable Queue (Redis)** | Lua script `LPOP → RPUSH` con recovery |
+| **Pub/Sub para WebSocket** | Redis Pub/Sub como bus de mensajes |
+| **Rate Limiting (Token Bucket vía Lua)** | Script Lua atómico con ventana deslizante |
+| **Graceful Shutdown** | Signal handlers + flag `_running` |
+| **Domain Exception Hierarchy** | Mapeo automático excepción → HTTP status |
+| **Multi-stage Docker** | Builder → Runtime |
+
+---
+
 ## ⚙️ Worker — Procesador de Fila
 
 El **Worker** es un proceso independiente que corre en su propio contenedor Docker (`vq_worker`). Es el motor que hace avanzar la fila virtual.

@@ -151,6 +151,19 @@ Routers (HTTP/WS)  →  Services (Lógica de negocio)  →  Repositories (Acceso
 | **TTL en permisos** | El usuario tiene un tiempo límite para completar su compra. |
 | **Verificación doble** | Se verifica capacidad restante antes de confirmar la compra. |
 
+## Patrones y Prácticas implementadas
+
+| | Implementación |
+|---|---|
+| **Repository Pattern** | Capa de repositories para MySQL y Redis |
+| **Service Layer** | Lógica de negocio separada de routers |
+| **Reliable Queue (Redis)** | Lua script `LPOP → RPUSH` con recovery |
+| **Pub/Sub para WebSocket** | Redis Pub/Sub como bus de mensajes |
+| **Rate Limiting (Token Bucket vía Lua)** | Script Lua atómico con ventana deslizante |
+| **Graceful Shutdown** | Signal handlers + flag `_running` |
+| **Domain Exception Hierarchy** | Mapeo automático excepción → HTTP status |
+| **Multi-stage Docker** | Builder → Runtime |
+
 ---
 
 ## 🚀 Inicio Rápido
