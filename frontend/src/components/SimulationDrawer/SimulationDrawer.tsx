@@ -60,7 +60,7 @@ export default function SimulationDrawer({
       });
 
       // Redirigir a la cola en modo simulación
-      router.push(`/cola/${selectedEvent.event_id}?sim=true&user_id=${userId}`);
+      router.push(`/cola/${selectedEvent.event_id}?sim=true&user_id=${userId}&population=${numUsers}`);
       onClose();
     } catch (error: any) {
       console.error("Error launching simulation:", error);

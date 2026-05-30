@@ -33,6 +33,7 @@ export default function QueuePage() {
 
   const isSimMode = searchParams.get("sim") === "true";
   const urlUserId = searchParams.get("user_id");
+  const populationCount = parseInt(searchParams.get("population") || "0", 10);
 
   // --- ESTADO LOCAL COMPARTIDO ---
   const [hyperspace, setHyperspace] = useState(false);
@@ -128,6 +129,7 @@ export default function QueuePage() {
             abandonedCount={stats?.abandoned_count || 0}
             processedRate={stats?.processed_rate || 0}
             throughput={stats?.throughput || 0}
+            populationCount={populationCount}
             onStop={() => router.push("/?simulation=true")}
             onGoHome={() => router.push("/")}
           />

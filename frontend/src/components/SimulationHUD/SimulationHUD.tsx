@@ -8,6 +8,7 @@ interface SimulationHUDProps {
   abandonedCount: number;
   processedRate: number;
   throughput?: number;
+  populationCount?: number;
   onStop?: () => void;
   onGoHome?: () => void;
 }
@@ -17,6 +18,7 @@ export default function SimulationHUD({
   abandonedCount,
   processedRate,
   throughput,
+  populationCount = 0,
   onStop,
   onGoHome,
 }: SimulationHUDProps) {
@@ -62,6 +64,15 @@ export default function SimulationHUD({
 
       <div className={styles.mainContent}>
         <div className={styles.sideStats}>
+          {populationCount > 0 && (
+            <div className={styles.glassCard}>
+              <div className={styles.statLabel}>USUARIOS INYECTADOS</div>
+              <div className={styles.statValue}>
+                {populationCount.toLocaleString()}
+              </div>
+            </div>
+          )}
+
           <div className={styles.glassCard}>
             <div className={styles.statLabel}>ATENCIÓN EN TIEMPO REAL</div>
             <div className={styles.statValue}>
