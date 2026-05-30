@@ -153,7 +153,7 @@ export default function LiveStats({
     <>
       <div className={styles.statsCard}>
         <p className={styles.statsTitle}>
-          {isSimMode ? "⚙️ Métricas de Simulación" : "📊 Estadísticas del Evento"}
+          {isSimMode ? "⚙️ Métricas de Simulación" : "📊 Información del evento"}
         </p>
 
         <div className={styles.statsGrid}>

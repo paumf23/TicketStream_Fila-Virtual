@@ -1,0 +1,132 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# docker-compose.prod.yml — Orquestación para PRODUCCIÓN
+# ═══════════════════════════════════════════════════════════════════════════════
+# Este archivo es la versión de producción de docker-compose.yml.
+# Diferencias clave respecto al de desarrollo:
+#   - Sin --reload (usa el CMD del Dockerfile con 4 workers)
+#   - Sin bind mounts (los contenedores usan su propia copia del código)
+#   - Puertos de MySQL y Redis cerrados al exterior
+#   - Contraseñas leídas desde archivo .env (no hardcodeadas)
+#   - Redis protegido con contraseña
+#   - Usuario MySQL dedicado (vq_app) en vez de root
+#
+# USO:
+#   1. cp .env.prod.example .env
+#   2. Editar .env con valores reales
+#   3. docker compose -f docker-compose.prod.yml up -d --build
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # --- Base de Datos MySQL ---
+  db:
+    image: mysql:8.0
+    container_name: vq_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    # SIN ports: — MySQL solo es accesible desde la red interna de Docker
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./migrations/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./migrations/init_user.sh:/docker-entrypoint-initdb.d/02-init-user.sh
+    networks:
+      - vq_network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 5s
+      retries: 5
+
+  # --- Motor de Cola y Cache (Redis) ---
+  redis:
+    image: redis:7.0-alpine
+    container_name: vq_redis
+    restart: always
+    # SIN ports: — Redis solo es accesible desde la red interna de Docker
+    command: >
+      redis-server /usr/local/etc/redis/redis.conf
+      --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+      - ./config/redis.prod.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - vq_network
+
+  # --- Backend API (FastAPI) ---
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vq_api
+    restart: always
+    # SIN command: — Usa el CMD del Dockerfile (uvicorn con 4 workers, sin --reload)
+    # SIN volumes: bind mount — Usa la copia del código dentro de la imagen
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - ENVIRONMENT=production
+      - LOG_LEVEL=${LOG_LEVEL:-WARNING}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - vq_network
+
+  # --- Worker (Procesador de Cola) ---
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vq_worker
+    restart: always
+    command: [ "python", "-m", "app.worker" ]
+    # SIN volumes: bind mount — Usa la copia del código dentro de la imagen
+    environment:
+      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - ENVIRONMENT=production
+    depends_on:
+      api:
+        condition: service_started
+    networks:
+      - vq_network
+
+  # --- Frontend (Next.js) ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vq_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # URL para el cliente (Navegador) — Debe ser la IP/dominio real del servidor
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      # URL para el servidor (SSR en Docker) — Comunicación interna entre contenedores
+      - INTERNAL_API_URL=${INTERNAL_API_URL:-http://api:8000}
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - vq_network
+
+networks:
+  vq_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:

@@ -517,16 +517,20 @@ Estas variables configuran el comportamiento del backend. Se definen en el archi
 Virtual Queue/
 │
 ├── 📄 README.md                        # ← Este archivo
-├── 📄 .env.example                     # Variables de entorno (template)
+├── 📄 .env.example                     # Variables de entorno (desarrollo)
+├── 📄 .env.prod.example                # Variables de entorno (producción)
 ├── 📄 .gitignore                       # Archivos excluidos de Git
-├── 🐳 docker-compose.yml              # Orquestación principal (4 servicios)
+├── 🐳 docker-compose.yml              # Orquestación principal (desarrollo)
+├── 🐳 docker-compose.prod.yml         # Orquestación para producción
 ├── 🐳 docker-compose.test.yml         # Stack de testing (k6 + InfluxDB + Grafana)
 │
 ├── ⚙️  config/
-│   └── redis.conf                      # Configuración de Redis (persistencia, memoria, clientes)
+│   ├── redis.conf                      # Configuración de Redis (desarrollo)
+│   └── redis.prod.conf                 # Configuración de Redis (producción, 512MB)
 │
 ├── 🗃️  migrations/
-│   └── init.sql                        # Schema inicial de MySQL (5 tablas)
+│   ├── init.sql                        # Schema inicial de MySQL (5 tablas)
+│   └── init_user.sh                    # Creación de usuario MySQL dedicado (producción)
 │
 ├── 📚 docs/
 │   ├── ARCHITECTURE.md                 # Documentación de arquitectura (C4 Model)
@@ -636,7 +640,6 @@ npm run dev
 
 **Importante:** Para desarrollo local sin Docker, es necesario tener MySQL 8 y Redis 7 corriendo localmente o accesibles por red.
 
----
 
 ## 📚 Documentación
 

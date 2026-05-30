@@ -13,7 +13,8 @@ export function formatPrice(price: number, currency: string): string {
  * Formatea una fecha ISO a un formato legible (es-AR).
  */
 export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("es-AR", {
+  const utcDateStr = dateStr.endsWith("Z") ? dateStr : `${dateStr}Z`;
+  return new Date(utcDateStr).toLocaleDateString("es-AR", {
     weekday: "long",
     day: "numeric",
     month: "long",
