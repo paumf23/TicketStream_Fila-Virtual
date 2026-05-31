@@ -21,14 +21,16 @@
 
 services:
 
-  # --- Base de Datos MySQL ---
+  # --- Base de Datos MySQL (Usando MariaDB por compatibilidad de CPU) ---
   db:
-    image: mysql:8.0
+    image: mariadb:10.11
     container_name: vq_mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_APP_USER: ${MYSQL_APP_USER}
+      MYSQL_APP_PASSWORD: ${MYSQL_APP_PASSWORD}
     # SIN ports: — MySQL solo es accesible desde la red interna de Docker
     volumes:
       - mysql_data:/var/lib/mysql
